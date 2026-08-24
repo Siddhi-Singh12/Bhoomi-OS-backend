@@ -1,25 +1,25 @@
-Create Table farmers(
+-- Bhoomi OS — PostgreSQL + PostGIS Schema
+-- Run after: CREATE EXTENSION IF NOT EXISTS postgis
+CREATE TABLE farmers (
     id SERIAL PRIMARY KEY,
     name VARCHAR(150) NOT NULL,
     phone VARCHAR(15) UNIQUE NOT NULL,
     language VARCHAR(30) DEFAULT 'hi',
-    agristack_id VARCHAR(50),
+    agristack_id VARCHAR(50),        -- mocked for MVP
     created_at TIMESTAMP DEFAULT NOW()
-
 );
 
-CREATE TABLE farms(
+CREATE TABLE farms (
     id SERIAL PRIMARY KEY,
-    farmer_id INTEGER NOT NULL REFERENCES farmers(id)   ON DELETE CASCADE,
+    farmer_id INTEGER NOT NULL REFERENCES farmers(id) ON DELETE CASCADE,
     crop_type VARCHAR(50),
     area_hectares NUMERIC(10,2),
-    boundary GEOMETRY(POLYGON,4326) NOT NULL,
+    boundary GEOMETRY(POLYGON, 4326) NOT NULL,   -- SRID 4326 = standard GPS lat/lng
     created_at TIMESTAMP DEFAULT NOW()
 );
 
-CREATE INDEX idx_farms_boundary  ON farms USING GIST(boundary);
+CREATE INDEX idx_farms_boundary ON farms USING GIST (boundary);
 
-/*analyses*/
 CREATE TABLE analyses (
     id SERIAL PRIMARY KEY,
     farm_id INTEGER NOT NULL REFERENCES farms(id) ON DELETE CASCADE,
@@ -37,20 +37,19 @@ CREATE TABLE proof_packets (
     id SERIAL PRIMARY KEY,
     analysis_id INTEGER NOT NULL REFERENCES analyses(id) ON DELETE CASCADE,
     pdf_url TEXT NOT NULL,
-    evidence_hash VARCHAR(128),
+    evidence_hash VARCHAR(128),         -- MVP-level integrity check, not full crypto signing
     claim_crop_type VARCHAR(50),        -- pre-filled from farms.crop_type
-    claim_loss_percent NUMERIC(5,2),    -- MVP placeholder, no official formula yet
+    claim_loss_percent NUMERIC(5,2),    -- MVP placeholder, no official PMFBY formula yet
     claim_area_hectares NUMERIC(10,2),  -- pre-filled from farms.area_hectares
     generated_at TIMESTAMP DEFAULT NOW()
 );
-
 
 CREATE TABLE alerts (
     id SERIAL PRIMARY KEY,
     source_farm_id INTEGER NOT NULL REFERENCES farms(id) ON DELETE CASCADE,
     alert_type VARCHAR(30),           -- e.g. 'VILLAGE_LEVEL_DROUGHT'
     radius_km NUMERIC(4,2) DEFAULT 2,
-    affected_farm_ids INTEGER[],      -- Postgres array — nearby farms found
+    affected_farm_ids INTEGER[],      -- nearby farms found via PostGIS query
     message TEXT,
     created_at TIMESTAMP DEFAULT NOW()
 );
