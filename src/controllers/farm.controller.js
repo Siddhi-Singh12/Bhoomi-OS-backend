@@ -1,24 +1,17 @@
-const { createFarm, getFarmById } = require('../models/farm.model');
+const { createFarm, getFarmById, getAllFarms } = require('../models/farm.model');
 
-async function registerFarm(req, res) {
+async function registerFarm(req, res, next) {
   try {
-    const { farmer_id, crop_type, boundary } = req.body;
+    const { farmer_id, crop_type, boundary, location_name, state } = req.body;
 
-    if (!farmer_id || !boundary) {
-      return res.status(400).json({ success: false, error: 'farmer_id and boundary are required' });
-    }
-
-    const farm = await createFarm({ farmer_id, crop_type, boundary });
+    const farm = await createFarm({ farmer_id, crop_type, boundary, location_name, state });
     res.status(201).json({ success: true, farm });
   } catch (err) {
-    if (err.code === '23503') {
-      return res.status(404).json({ success: false, error: 'farmer_id does not exist' });
-    }
-    res.status(500).json({ success: false, error: err.message });
+    next(err);
   }
 }
 
-async function fetchFarm(req, res) {
+async function fetchFarm(req, res, next) {
   try {
     const farm = await getFarmById(req.params.id);
     if (!farm) {
@@ -26,8 +19,18 @@ async function fetchFarm(req, res) {
     }
     res.json({ success: true, farm });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    next(err);
   }
 }
 
-module.exports = { registerFarm, fetchFarm };
+async function listFarms(req, res, next) {
+  try {
+    const farmerId = req.query.farmer_id ? parseInt(req.query.farmer_id, 10) : null;
+    const farms = await getAllFarms(farmerId);
+    res.json({ success: true, count: farms.length, farms });
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { registerFarm, fetchFarm, listFarms };

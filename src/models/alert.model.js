@@ -1,6 +1,6 @@
 const pool = require('../config/db');
 
-async function findNearbyFarms(farm_id, radius_km) {
+async function findNearbyFarms(farm_id, radius_km = 2) {
   const query = `
     SELECT id FROM farms
     WHERE ST_DWithin(
@@ -11,7 +11,7 @@ async function findNearbyFarms(farm_id, radius_km) {
     AND id != $1;
   `;
   const result = await pool.query(query, [farm_id, radius_km]);
-  return result.rows.map(row => row.id);
+  return result.rows.map((row) => row.id);
 }
 
 async function createAlert({ source_farm_id, alert_type, radius_km, affected_farm_ids, message }) {
@@ -26,8 +26,33 @@ async function createAlert({ source_farm_id, alert_type, radius_km, affected_far
 }
 
 async function getAlertById(id) {
-  const result = await pool.query('SELECT * FROM alerts WHERE id = $1', [id]);
-  return result.rows[0];
+  const query = `
+    SELECT 
+      a.*,
+      f.crop_type,
+      fm.name AS farmer_name
+    FROM alerts a
+    LEFT JOIN farms f ON f.id = a.source_farm_id
+    LEFT JOIN farmers fm ON fm.id = f.farmer_id
+    WHERE a.id = $1;
+  `;
+  const result = await pool.query(query, [id]);
+  return result.rows[0] || null;
 }
 
-module.exports = { findNearbyFarms, createAlert, getAlertById };
+async function getAllAlerts() {
+  const query = `
+    SELECT 
+      a.*,
+      f.crop_type,
+      fm.name AS farmer_name
+    FROM alerts a
+    LEFT JOIN farms f ON f.id = a.source_farm_id
+    LEFT JOIN farmers fm ON fm.id = f.farmer_id
+    ORDER BY a.created_at DESC;
+  `;
+  const result = await pool.query(query);
+  return result.rows;
+}
+
+module.exports = { findNearbyFarms, createAlert, getAlertById, getAllAlerts };

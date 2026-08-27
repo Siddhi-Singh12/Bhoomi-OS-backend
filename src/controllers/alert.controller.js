@@ -1,6 +1,6 @@
-const { getAlertById } = require('../models/alert.model');
+const { getAlertById, getAllAlerts } = require('../models/alert.model');
 
-async function fetchAlert(req, res) {
+async function fetchAlert(req, res, next) {
   try {
     const alert = await getAlertById(req.params.id);
     if (!alert) {
@@ -8,8 +8,17 @@ async function fetchAlert(req, res) {
     }
     res.json({ success: true, alert });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    next(err);
   }
 }
 
-module.exports = { fetchAlert };
+async function listAlerts(req, res, next) {
+  try {
+    const alerts = await getAllAlerts();
+    res.json({ success: true, count: alerts.length, alerts });
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { fetchAlert, listAlerts };

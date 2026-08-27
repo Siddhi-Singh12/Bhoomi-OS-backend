@@ -1,6 +1,12 @@
-const { createProofPacket, getProofPacketById } = require('../models/proofPacket.model');
+const path = require('path');
+const {
+  createProofPacket,
+  getProofPacketById,
+  getAllProofPackets,
+} = require('../models/proofPacket.model');
+const { getProofPacketFilePath } = require('../services/storage.service');
 
-async function generateProofPacket(req, res) {
+async function generateProofPacket(req, res, next) {
   try {
     const { analysis_id, claim_loss_percent } = req.body;
 
@@ -9,16 +15,20 @@ async function generateProofPacket(req, res) {
     }
 
     const proofPacket = await createProofPacket({ analysis_id, claim_loss_percent });
-    res.status(201).json({ success: true, proofPacket });
+    res.status(201).json({
+      success: true,
+      message: 'Proof packet generated successfully with cryptographic evidence hash',
+      proofPacket,
+    });
   } catch (err) {
     if (err.code === 'ANALYSIS_NOT_FOUND' || err.code === '23503') {
       return res.status(404).json({ success: false, error: 'analysis_id does not exist' });
     }
-    res.status(500).json({ success: false, error: err.message });
+    next(err);
   }
 }
 
-async function fetchProofPacket(req, res) {
+async function fetchProofPacket(req, res, next) {
   try {
     const proofPacket = await getProofPacketById(req.params.id);
     if (!proofPacket) {
@@ -26,8 +36,42 @@ async function fetchProofPacket(req, res) {
     }
     res.json({ success: true, proofPacket });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    next(err);
   }
 }
 
-module.exports = { generateProofPacket, fetchProofPacket };
+async function listProofPackets(req, res, next) {
+  try {
+    const proofPackets = await getAllProofPackets();
+    res.json({ success: true, count: proofPackets.length, proofPackets });
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function downloadProofPacketPDF(req, res, next) {
+  try {
+    const proofPacket = await getProofPacketById(req.params.id);
+    if (!proofPacket || !proofPacket.pdf_url) {
+      return res.status(404).json({ success: false, error: 'Proof packet or PDF not found' });
+    }
+
+    const filename = path.basename(proofPacket.pdf_url);
+    const filePath = getProofPacketFilePath(filename);
+
+    if (!filePath) {
+      return res.status(404).json({ success: false, error: 'PDF file not found in storage' });
+    }
+
+    res.download(filePath, `PMFBY-Proof-Packet-${proofPacket.id || req.params.id}.pdf`);
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = {
+  generateProofPacket,
+  fetchProofPacket,
+  listProofPackets,
+  downloadProofPacketPDF,
+};
