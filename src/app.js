@@ -10,6 +10,7 @@ const farmRoutes = require('./routes/farm.routes');
 const analysisRoutes = require('./routes/analysis.routes');
 const proofPacketRoutes = require('./routes/proofPacket.routes');
 const alertRoutes = require('./routes/alert.routes');
+const agristackRoutes = require('./routes/agristackUfsi.routes');
 
 const app = express();
 
@@ -38,6 +39,7 @@ app.use('/api/farms', farmRoutes);
 app.use('/api/analyses', analysisRoutes);
 app.use('/api/proof-packets', proofPacketRoutes);
 app.use('/api/alerts', alertRoutes);
+app.use('/api/agristack', agristackRoutes);
 
 // 404 Fallback
 app.use((req, res, next) => {
