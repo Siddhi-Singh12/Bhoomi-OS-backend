@@ -48,6 +48,13 @@ export default function Dashboard() {
             <p className="text-sm font-medium text-gray-800">{farmer.name}</p>
             <p className="text-xs text-gray-500">{farmer.phone}</p>
           </div>
+
+          <button
+            onClick={() => navigate('/alerts')}
+            className="text-sm text-red-600 font-medium hover:underline"
+          >
+            🔔 View Alerts
+          </button>
           <button
             onClick={handleLogout}
             className="text-sm text-red-600 hover:underline"
