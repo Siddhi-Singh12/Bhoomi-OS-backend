@@ -25,20 +25,23 @@ export default function FarmDetail() {
     }
   }
 
-  async function handleAnalyze() {
-    setAnalyzing(true);
-    setError('');
-    setResult(null);
-    setProofPacket(null);
-    try {
-      const res = await apiClient.post('/analyses', { farm_id: parseInt(id, 10) });
-      setResult(res.data);
-    } catch (err) {
-      setError(err.response?.data?.error || 'Analysis failed. The stress detection service may be waking up — try again in a few seconds.');
-    } finally {
-      setAnalyzing(false);
-    }
+  async function handleAnalyze(demoScenario = null) {
+  setAnalyzing(true);
+  setError('');
+  setResult(null);
+  setProofPacket(null);
+  try {
+    const payload = { farm_id: parseInt(id, 10) };
+    if (demoScenario) payload.demo_scenario = demoScenario;
+
+    const res = await apiClient.post('/analyses', payload);
+    setResult(res.data);
+  } catch (err) {
+    setError(err.response?.data?.error || 'Analysis failed. The stress detection service may be waking up — try again in a few seconds.');
+  } finally {
+    setAnalyzing(false);
   }
+}
 
   async function handleGeneratePDF() {
     setGeneratingPDF(true);
@@ -57,8 +60,8 @@ export default function FarmDetail() {
   }
 
   function downloadPDF() {
-    window.open(`http://localhost:5001/api/proof-packets/${proofPacket.id}/download`, '_blank');
-  }
+  window.open(`https://bhoomi-os-backend.onrender.com/api/proof-packets/${proofPacket.id}/download`, '_blank');
+}
 
   if (!farm) return <div className="p-8 text-gray-500">Loading farm...</div>;
 
@@ -89,16 +92,27 @@ export default function FarmDetail() {
           <p className="text-sm text-gray-500 mb-4">
             Runs real-time satellite (Sentinel-2 NDVI/NDWI) + weather analysis on this farm's boundary.
           </p>
-          <button
-            onClick={handleAnalyze}
-            disabled={analyzing}
-            className="bg-emerald-700 text-white px-5 py-2.5 rounded-lg font-medium hover:bg-emerald-800 disabled:opacity-50"
-          >
-            {analyzing ? 'Analyzing satellite + weather data...' : 'Run Stress Analysis'}
-          </button>
+          <div className="flex gap-3">
+            <button
+              onClick={() => handleAnalyze()}
+              disabled={analyzing}
+              className="bg-emerald-700 text-white px-5 py-2.5 rounded-lg font-medium hover:bg-emerald-800 disabled:opacity-50"
+            >
+              {analyzing ? 'Analyzing...' : 'Run Live Analysis'}
+            </button>
+            <button
+              onClick={() => handleAnalyze('example_drought_scenario')}
+              disabled={analyzing}
+              className="bg-red-600 text-white px-5 py-2.5 rounded-lg font-medium hover:bg-red-700 disabled:opacity-50"
+            >
+              {analyzing ? 'Loading...' : 'Demo: Drought Scenario'}
+            </button>
+          </div>
+          <p className="text-xs text-gray-400 mt-2">
+            "Demo: Drought Scenario" uses an illustrative example dataset to reliably showcase the drought detection + alert pathway.
+          </p>
           {error && <p className="text-red-500 text-sm mt-3">{error}</p>}
         </div>
-
         {/* Result */}
         {result && (
           <div className={`rounded-xl border p-6 ${stressColors[result.analysis.stress_type]}`}>
