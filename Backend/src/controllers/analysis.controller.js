@@ -42,7 +42,23 @@ async function runAnalysis(req, res) {
       });
     }
 
-    res.status(201).json({ success: true, analysis, explanation: result.explanation, alert });
+    const enrichedAnalysis = {
+      ...analysis,
+      risk_score: result.risk_score,
+      risk_level: result.risk_level,
+      why_flagged: result.why_flagged,
+      satellite_date: result.satellite_date,
+    };
+
+    res.status(201).json({
+      success: true,
+      analysis: enrichedAnalysis,
+      risk_score: result.risk_score,
+      risk_level: result.risk_level,
+      why_flagged: result.why_flagged,
+      explanation: result.explanation,
+      alert,
+    });
   } catch (err) {
     if (err.code === '23503') {
       return res.status(404).json({ success: false, error: 'farm_id does not exist' });
@@ -60,10 +76,42 @@ async function fetchAnalysis(req, res) {
     if (!analysis) {
       return res.status(404).json({ success: false, error: 'Analysis not found' });
     }
-    res.json({ success: true, analysis });
+    const { calculateRiskScore } = require('../services/rulesEngine.service');
+    const risk = calculateRiskScore(analysis.stress_type, analysis.confidence, analysis.ndvi, analysis.rainfall_mm, analysis.temperature_c);
+    res.json({
+      success: true,
+      analysis: {
+        ...analysis,
+        risk_score: risk.risk_score,
+        risk_level: risk.risk_level,
+        why_flagged: risk.why_flagged,
+      },
+    });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
 }
 
-module.exports = { runAnalysis, fetchAnalysis };
+async function listFarmAnalyses(req, res) {
+  try {
+    const farmId = req.params.farm_id || req.query.farm_id;
+    if (!farmId) {
+      const { getAllAnalyses } = require('../models/analysis.model');
+      const analyses = await getAllAnalyses();
+      return res.json({ success: true, count: analyses.length, analyses });
+    }
+
+    const { getAnalysesByFarmId } = require('../models/analysis.model');
+    const { calculateRiskScore } = require('../services/rulesEngine.service');
+    const records = await getAnalysesByFarmId(farmId);
+    const enriched = records.map((a) => {
+      const r = calculateRiskScore(a.stress_type, a.confidence, a.ndvi, a.rainfall_mm, a.temperature_c);
+      return { ...a, risk_score: r.risk_score, risk_level: r.risk_level };
+    });
+    res.json({ success: true, count: enriched.length, analyses: enriched });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+}
+
+module.exports = { runAnalysis, fetchAnalysis, listFarmAnalyses };

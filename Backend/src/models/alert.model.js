@@ -30,14 +30,25 @@ async function getAlertById(id) {
     SELECT 
       a.*,
       f.crop_type,
-      fm.name AS farmer_name
+      fm.name AS farmer_name,
+      fm.phone AS farmer_phone,
+      ST_AsGeoJSON(f.boundary) AS source_boundary,
+      ROUND(ST_Y(ST_Centroid(f.boundary))::numeric, 6) AS lat,
+      ROUND(ST_X(ST_Centroid(f.boundary))::numeric, 6) AS lng
     FROM alerts a
     LEFT JOIN farms f ON f.id = a.source_farm_id
     LEFT JOIN farmers fm ON fm.id = f.farmer_id
     WHERE a.id = $1;
   `;
   const result = await pool.query(query, [id]);
-  return result.rows[0] || null;
+  if (result.rows.length === 0) return null;
+  const row = result.rows[0];
+  return {
+    ...row,
+    lat: row.lat != null ? parseFloat(row.lat) : null,
+    lng: row.lng != null ? parseFloat(row.lng) : null,
+    source_boundary: typeof row.source_boundary === 'string' ? JSON.parse(row.source_boundary) : row.source_boundary,
+  };
 }
 
 async function getAllAlerts() {
@@ -45,14 +56,23 @@ async function getAllAlerts() {
     SELECT 
       a.*,
       f.crop_type,
-      fm.name AS farmer_name
+      fm.name AS farmer_name,
+      fm.phone AS farmer_phone,
+      ST_AsGeoJSON(f.boundary) AS source_boundary,
+      ROUND(ST_Y(ST_Centroid(f.boundary))::numeric, 6) AS lat,
+      ROUND(ST_X(ST_Centroid(f.boundary))::numeric, 6) AS lng
     FROM alerts a
     LEFT JOIN farms f ON f.id = a.source_farm_id
     LEFT JOIN farmers fm ON fm.id = f.farmer_id
     ORDER BY a.created_at DESC;
   `;
   const result = await pool.query(query);
-  return result.rows;
+  return result.rows.map((row) => ({
+    ...row,
+    lat: row.lat != null ? parseFloat(row.lat) : null,
+    lng: row.lng != null ? parseFloat(row.lng) : null,
+    source_boundary: typeof row.source_boundary === 'string' ? JSON.parse(row.source_boundary) : row.source_boundary,
+  }));
 }
 
 module.exports = { findNearbyFarms, createAlert, getAlertById, getAllAlerts };

@@ -68,6 +68,18 @@ async function createProofPacket({ analysis_id, claim_loss_percent }) {
   fullData.claim_loss_percent = lossPercent;
   fullData.generated_at = new Date().toISOString();
 
+  // Compute transparent AI risk score
+  const { calculateRiskScore } = require('../services/rulesEngine.service');
+  const risk = calculateRiskScore(
+    fullData.stress_type,
+    fullData.confidence,
+    fullData.ndvi,
+    fullData.rainfall_mm,
+    fullData.temperature_c
+  );
+  fullData.risk_score = risk.risk_score;
+  fullData.risk_level = risk.risk_level;
+
   // 2. Generate Evidence Hash
   const evidenceHash = computeEvidenceHash(fullData);
   fullData.evidence_hash = evidenceHash;
