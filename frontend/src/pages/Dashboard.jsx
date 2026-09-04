@@ -60,7 +60,7 @@ export default function Dashboard() {
         <JudgeDemoBar
           currentStep={2}
           totalSteps={6}
-          nextLabel="Open Plot #1 (Wheat)"
+          nextLabel="Verify Cadastral Parcel #1"
           onNext={handleDemoNext}
           onExit={handleExitDemo}
         />
@@ -188,12 +188,12 @@ export default function Dashboard() {
                 >
                   <div>
                     {isTargetDemoFarm && (
-                      <div className="mb-2 bg-emerald-100/90 text-emerald-950 border border-emerald-300 px-2.5 py-1 rounded-lg text-[11px] font-bold flex items-center justify-between">
+                      <div className="mb-2 bg-emerald-100/90 text-emerald-950 border border-emerald-300 px-2.5 py-1 rounded-lg text-[11px] font-bold flex items-center justify-between font-mono">
                         <span className="flex items-center gap-1.5">
                           <Zap className="w-3.5 h-3.5 text-emerald-700" />
-                          Judge Demo Target Parcel
+                          Fast-Track Adjudication Target
                         </span>
-                        <span className="font-mono text-[10px] text-emerald-800 uppercase">Click to Open</span>
+                        <span className="text-[10px] text-emerald-800 uppercase font-semibold">Inspect Parcel ›</span>
                       </div>
                     )}
                     <div className="flex items-start justify-between mb-3">

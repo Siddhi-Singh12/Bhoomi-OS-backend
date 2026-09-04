@@ -114,28 +114,28 @@ export default function Login() {
           </div>
         </div>
 
-        {/* Start Judge Demo Button */}
+        {/* Fast-Track Adjudication Pipeline Action */}
         <button
           type="button"
           onClick={handleStartJudgeDemo}
           disabled={loading}
-          className="w-full mb-4 bg-gradient-to-r from-slate-950 via-slate-900 to-emerald-950 text-white p-3.5 rounded-xl border border-emerald-500/40 font-bold hover:border-emerald-400 hover:shadow-lg transition flex items-center justify-between group text-xs disabled:opacity-50"
+          className="w-full mb-4 bg-gradient-to-r from-slate-950 via-slate-900 to-emerald-950 text-white p-3.5 rounded-xl border border-emerald-500/50 font-bold hover:border-emerald-400 hover:shadow-xl transition flex items-center justify-between group text-xs disabled:opacity-50"
         >
           <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 bg-emerald-600 rounded-lg flex items-center justify-center text-white shadow-xs">
-              <Zap className="w-4 h-4 text-emerald-200" />
+            <div className="w-7 h-7 bg-emerald-700 rounded-lg flex items-center justify-center text-white shadow-xs">
+              <Zap className="w-4 h-4 text-amber-300" />
             </div>
             <div className="text-left">
-              <span className="font-black text-emerald-300 block tracking-wide text-xs">
-                Judge Demo Mode
+              <span className="font-black text-emerald-300 block tracking-wide text-xs uppercase font-mono">
+                Fast-Track Adjudication Pipeline
               </span>
               <span className="text-[10px] text-slate-300 font-normal">
-                1-Click Guided Calamity Walkthrough
+                Automated 6-Stage Calamity Verification Workflow
               </span>
             </div>
           </div>
-          <div className="flex items-center gap-1 text-[11px] text-emerald-400 font-mono group-hover:translate-x-1 transition-transform">
-            <span>Launch</span>
+          <div className="flex items-center gap-1 text-[11px] text-emerald-400 font-mono font-bold group-hover:translate-x-1 transition-transform">
+            <span>Execute</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </div>
         </button>

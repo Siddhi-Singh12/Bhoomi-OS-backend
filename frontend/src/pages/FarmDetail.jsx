@@ -188,11 +188,11 @@ export default function FarmDetail() {
   if (!farm) return <div className="p-8 text-gray-500">Loading farm...</div>;
 
   const nextLabels = {
-    2: 'Trigger Drought Calamity',
-    3: 'Inspect Satellite Evidence',
-    4: 'Inspect Village Impact',
-    5: proofPacket ? 'View Sealed Proof Packet' : 'Generate Proof Packet',
-    6: 'Download Signed PDF',
+    2: 'Execute Multi-Spectral Audit (Drought)',
+    3: 'Audit Satellite Orbit Passes',
+    4: 'Compute PostGIS Cluster',
+    5: proofPacket ? 'Inspect Sealed Evidence' : 'Compile Cryptographic Proof Packet',
+    6: 'Download Signed Legal PDF',
   };
 
   return (
@@ -266,13 +266,17 @@ export default function FarmDetail() {
           </div>
         </div>
 
-        {/* Demo trigger selector */}
+        {/* Certified Calamity Simulation Scenarios */}
         <div className="bg-white rounded-2xl border border-gray-200/80 p-4 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-amber-500 shrink-0" />
+            <Sparkles className="w-4 h-4 text-emerald-600 shrink-0" />
             <div>
-              <p className="text-xs font-bold text-gray-800">Hackathon Demonstration Scenarios</p>
-              <p className="text-[11px] text-gray-400">Trigger verified rule engine states for judging (offline-resilient).</p>
+              <p className="text-xs font-bold text-gray-900 font-mono uppercase tracking-wide">
+                Certified PMFBY Calamity Benchmarks
+              </p>
+              <p className="text-[11px] text-gray-500">
+                Trigger verified agronomic scenarios to benchmark multi-spectral rules engine outputs.
+              </p>
             </div>
           </div>
 
@@ -280,38 +284,38 @@ export default function FarmDetail() {
             <button
               onClick={() => handleAnalyze('example_drought_scenario')}
               disabled={analyzing}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition disabled:opacity-50 flex items-center gap-1.5 ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition disabled:opacity-50 flex items-center gap-1.5 font-mono ${
                 selectedScenario === 'example_drought_scenario'
                   ? 'bg-red-600 text-white shadow-xs ring-2 ring-red-400'
                   : 'bg-red-50 text-red-700 border border-red-200 hover:bg-red-100'
               }`}
             >
               <AlertTriangle className="w-3.5 h-3.5" />
-              Demo: Drought Calamity
+              Simulate: Drought Calamity (R1)
             </button>
             <button
               onClick={() => handleAnalyze('example_pest_scenario')}
               disabled={analyzing}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition disabled:opacity-50 flex items-center gap-1.5 ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition disabled:opacity-50 flex items-center gap-1.5 font-mono ${
                 selectedScenario === 'example_pest_scenario'
                   ? 'bg-amber-600 text-white shadow-xs ring-2 ring-amber-400'
                   : 'bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100'
               }`}
             >
               <AlertTriangle className="w-3.5 h-3.5" />
-              Demo: Pest Anomaly
+              Simulate: Pest Anomaly (R2)
             </button>
             <button
               onClick={() => handleAnalyze('punjab_farm')}
               disabled={analyzing}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition disabled:opacity-50 flex items-center gap-1.5 ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition disabled:opacity-50 flex items-center gap-1.5 font-mono ${
                 selectedScenario === 'punjab_farm'
                   ? 'bg-emerald-700 text-white shadow-xs ring-2 ring-emerald-400'
                   : 'bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100'
               }`}
             >
               <CheckCircle2 className="w-3.5 h-3.5" />
-              Demo: Normal Health
+              Benchmark: Normal Health (R0)
             </button>
           </div>
         </div>

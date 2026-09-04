@@ -38,13 +38,13 @@ export default function AppHeader({ farmer }) {
             onClick={handleTriggerDemo}
             className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition ${
               isJudgeDemo
-                ? 'bg-emerald-950 text-emerald-300 border border-emerald-600 shadow-xs ring-1 ring-emerald-500/50'
+                ? 'bg-emerald-950 text-emerald-300 border border-emerald-600 shadow-xs ring-1 ring-emerald-400/50'
                 : 'bg-emerald-50 text-emerald-800 border border-emerald-300/80 hover:bg-emerald-100'
             }`}
-            title="Launch guided judge presentation walkthrough"
+            title="Launch automated PMFBY claim adjudication pipeline"
           >
             <Zap className="w-3.5 h-3.5 text-amber-400" />
-            <span>Judge Demo Mode</span>
+            <span>Fast-Track Pipeline</span>
           </button>
 
           <button
