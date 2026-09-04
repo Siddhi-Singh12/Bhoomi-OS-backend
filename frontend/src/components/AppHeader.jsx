@@ -1,5 +1,5 @@
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Sprout, ScanLine, Bell, ShieldCheck, LogOut, Radio, User } from 'lucide-react';
+import { Sprout, ScanLine, Bell, ShieldCheck, LogOut, Radio, User, Zap } from 'lucide-react';
 
 export default function AppHeader({ farmer }) {
   const navigate = useNavigate();
@@ -7,6 +7,12 @@ export default function AppHeader({ farmer }) {
 
   const isDashboard = location.pathname === '/dashboard' || location.pathname.startsWith('/farm');
   const isAlerts = location.pathname === '/alerts';
+  const isJudgeDemo = localStorage.getItem('judgeDemo') === 'true' || location.search.includes('demo=judge');
+
+  function handleTriggerDemo() {
+    localStorage.setItem('judgeDemo', 'true');
+    navigate('/dashboard?demo=judge');
+  }
 
   return (
     <header className="bg-white border-b border-gray-200 px-6 py-3.5 sticky top-0 z-40 shadow-xs">
@@ -29,9 +35,22 @@ export default function AppHeader({ farmer }) {
 
         <nav className="hidden md:flex items-center gap-2 text-sm">
           <button
+            onClick={handleTriggerDemo}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition ${
+              isJudgeDemo
+                ? 'bg-emerald-950 text-emerald-300 border border-emerald-600 shadow-xs ring-1 ring-emerald-500/50'
+                : 'bg-emerald-50 text-emerald-800 border border-emerald-300/80 hover:bg-emerald-100'
+            }`}
+            title="Launch guided judge presentation walkthrough"
+          >
+            <Zap className="w-3.5 h-3.5 text-amber-400" />
+            <span>Judge Demo Mode</span>
+          </button>
+
+          <button
             onClick={() => navigate('/dashboard')}
             className={`px-3.5 py-1.5 rounded-lg font-semibold flex items-center gap-2 transition ${
-              isDashboard
+              isDashboard && !isJudgeDemo
                 ? 'bg-emerald-50 text-emerald-800 border border-emerald-200/60'
                 : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100/70'
             }`}

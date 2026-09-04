@@ -36,6 +36,8 @@ async function getFarmById(id) {
       f.crop_type,
       f.area_hectares,
       ST_AsGeoJSON(f.boundary) AS boundary,
+      ROUND(ST_Y(ST_Centroid(f.boundary))::numeric, 6) AS lat,
+      ROUND(ST_X(ST_Centroid(f.boundary))::numeric, 6) AS lng,
       f.created_at
     FROM farms f
     LEFT JOIN farmers fm ON fm.id = f.farmer_id
@@ -44,9 +46,23 @@ async function getFarmById(id) {
   const result = await pool.query(query, [id]);
   if (result.rows.length === 0) return null;
   const farm = result.rows[0];
+  const parsedBoundary = typeof farm.boundary === 'string' ? JSON.parse(farm.boundary) : farm.boundary;
+  let centroid = (farm.lat != null && farm.lng != null)
+    ? { lat: parseFloat(farm.lat), lng: parseFloat(farm.lng) }
+    : null;
+
+  if (!centroid && parsedBoundary?.coordinates?.[0]) {
+    try {
+      centroid = calculateCentroid(parsedBoundary.coordinates[0]);
+    } catch (e) {
+      centroid = { lat: 21.824, lng: 75.615 };
+    }
+  }
+
   return {
     ...farm,
-    boundary: typeof farm.boundary === 'string' ? JSON.parse(farm.boundary) : farm.boundary,
+    boundary: parsedBoundary,
+    centroid: centroid || { lat: 21.824, lng: 75.615 },
   };
 }
 
@@ -60,6 +76,8 @@ async function getAllFarms(farmer_id = null) {
       f.crop_type,
       f.area_hectares,
       ST_AsGeoJSON(f.boundary) AS boundary,
+      ROUND(ST_Y(ST_Centroid(f.boundary))::numeric, 6) AS lat,
+      ROUND(ST_X(ST_Centroid(f.boundary))::numeric, 6) AS lng,
       f.created_at
     FROM farms f
     LEFT JOIN farmers fm ON fm.id = f.farmer_id
@@ -72,10 +90,24 @@ async function getAllFarms(farmer_id = null) {
   query += ` ORDER BY f.id DESC;`;
 
   const result = await pool.query(query, values);
-  return result.rows.map((row) => ({
-    ...row,
-    boundary: typeof row.boundary === 'string' ? JSON.parse(row.boundary) : row.boundary,
-  }));
+  return result.rows.map((row) => {
+    const parsedBoundary = typeof row.boundary === 'string' ? JSON.parse(row.boundary) : row.boundary;
+    let centroid = (row.lat != null && row.lng != null)
+      ? { lat: parseFloat(row.lat), lng: parseFloat(row.lng) }
+      : null;
+    if (!centroid && parsedBoundary?.coordinates?.[0]) {
+      try {
+        centroid = calculateCentroid(parsedBoundary.coordinates[0]);
+      } catch (e) {
+        centroid = { lat: 21.824, lng: 75.615 };
+      }
+    }
+    return {
+      ...row,
+      boundary: parsedBoundary,
+      centroid: centroid || { lat: 21.824, lng: 75.615 },
+    };
+  });
 }
 
 async function getFarmCentroid(farm_id) {

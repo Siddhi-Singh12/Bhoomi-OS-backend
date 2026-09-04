@@ -1,11 +1,12 @@
-import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useEffect, useState, useRef } from 'react';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import apiClient from '../api/client';
 import AppHeader from '../components/AppHeader';
 import MetricGauge from '../components/MetricGauge';
 import AIRiskScoreCard from '../components/AIRiskScoreCard';
 import SatelliteTimeline from '../components/SatelliteTimeline';
 import VillageAlertMap from '../components/VillageAlertMap';
+import JudgeDemoBar from '../components/JudgeDemoBar';
 import {
   Zap,
   Sparkles,
@@ -23,18 +24,32 @@ import {
   FileCheck,
   Clock,
   Layers,
+  QrCode,
 } from 'lucide-react';
 
 export default function FarmDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const farmer = JSON.parse(localStorage.getItem('farmer') || '{}');
   const [farm, setFarm] = useState(null);
   const [analyzing, setAnalyzing] = useState(false);
+  const [selectedScenario, setSelectedScenario] = useState(null);
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
   const [generatingPDF, setGeneratingPDF] = useState(false);
   const [proofPacket, setProofPacket] = useState(null);
+
+  // Judge Demo Mode state
+  const isJudgeDemo = localStorage.getItem('judgeDemo') === 'true' || location.search.includes('demo=judge');
+  const [demoStep, setDemoStep] = useState(2); // Step 2: Field view
+  const [autoPlay, setAutoPlay] = useState(false);
+
+  // Section Refs for smooth guided scroll
+  const diagnosisRef = useRef(null);
+  const satelliteRef = useRef(null);
+  const villageRef = useRef(null);
+  const packetRef = useRef(null);
 
   useEffect(() => {
     loadFarm();
@@ -54,29 +69,49 @@ export default function FarmDetail() {
     setError('');
     setResult(null);
     setProofPacket(null);
+    setSelectedScenario(demoScenario || 'scan');
     try {
       const payload = { farm_id: parseInt(id, 10) };
       if (demoScenario) payload.demo_scenario = demoScenario;
       const res = await apiClient.post('/analyses', payload);
       setResult(res.data);
+      if (isJudgeDemo) {
+        setDemoStep(3); // Advanced to Diagnosis
+        setTimeout(() => {
+          diagnosisRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 150);
+      }
+      return res.data;
     } catch (err) {
-      setError(err.response?.data?.error || 'Analysis failed. The stress detection service may be waking up — try again in a few seconds.');
+      setError(err.response?.data?.error || 'Analysis service temporarily unavailable. Please try again.');
+      return null;
     } finally {
       setAnalyzing(false);
     }
   }
 
   async function handleGeneratePDF() {
+    if (!result?.analysis?.id) return;
     setGeneratingPDF(true);
     setError('');
     try {
+      const stressType = (result.analysis.stress_type || '').toUpperCase();
+      const lossPercent = stressType === 'DROUGHT' ? 40 : (stressType === 'PEST_RISK' ? 25 : 0);
       const res = await apiClient.post('/proof-packets', {
         analysis_id: result.analysis.id,
-        claim_loss_percent: result.analysis.stress_type === 'DROUGHT' ? 40 : 0,
+        claim_loss_percent: lossPercent,
       });
       setProofPacket(res.data.proofPacket);
+      if (isJudgeDemo) {
+        setDemoStep(6);
+        setTimeout(() => {
+          packetRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 150);
+      }
+      return res.data.proofPacket;
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to generate proof packet');
+      return null;
     } finally {
       setGeneratingPDF(false);
     }
@@ -89,21 +124,97 @@ export default function FarmDetail() {
     window.open(url, '_blank');
   }
 
+  // Judge Demo Progression Controls
+  async function handleDemoNext() {
+    if (!result) {
+      // Step 3: Trigger Drought Calamity
+      await handleAnalyze('example_drought_scenario');
+      return;
+    }
+
+    if (demoStep === 3) {
+      // Step 4: Advance to Satellite Evidence
+      setDemoStep(4);
+      satelliteRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
+    }
+
+    if (demoStep === 4) {
+      // Step 5: Advance to Village Impact
+      setDemoStep(5);
+      villageRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
+    }
+
+    if (demoStep === 5 && !proofPacket) {
+      // Step 6: Generate Proof Packet
+      await handleGeneratePDF();
+      return;
+    }
+
+    if (demoStep >= 5 && proofPacket) {
+      downloadPDF();
+    }
+  }
+
+  function handleExitDemo() {
+    localStorage.removeItem('judgeDemo');
+    navigate(`/farm/${id}`);
+  }
+
+  // Auto-play timer effect for guided presentation
+  useEffect(() => {
+    if (!autoPlay || !isJudgeDemo) return;
+
+    const timer = setTimeout(async () => {
+      if (!result && !analyzing) {
+        await handleAnalyze('example_drought_scenario');
+      } else if (demoStep === 3) {
+        setDemoStep(4);
+        satelliteRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } else if (demoStep === 4) {
+        setDemoStep(5);
+        villageRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } else if (demoStep === 5 && !proofPacket && !generatingPDF) {
+        await handleGeneratePDF();
+      } else if (demoStep === 6) {
+        setAutoPlay(false); // Completed walkthrough
+      }
+    }, 2800);
+
+    return () => clearTimeout(timer);
+  }, [autoPlay, demoStep, result, proofPacket, analyzing, generatingPDF]);
+
   if (!farm) return <div className="p-8 text-gray-500">Loading farm...</div>;
 
-  const stressColors = {
-    DROUGHT: 'bg-red-50 text-red-700 border-red-200',
-    PEST_RISK: 'bg-orange-50 text-orange-700 border-orange-200',
-    NONE: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  const nextLabels = {
+    2: 'Trigger Drought Calamity',
+    3: 'Inspect Satellite Evidence',
+    4: 'Inspect Village Impact',
+    5: proofPacket ? 'View Sealed Proof Packet' : 'Generate Proof Packet',
+    6: 'Download Signed PDF',
   };
 
   return (
     <div className="min-h-screen bg-gray-50/70">
       <AppHeader farmer={farmer} />
 
+      {isJudgeDemo && (
+        <JudgeDemoBar
+          currentStep={demoStep}
+          totalSteps={6}
+          nextLabel={nextLabels[demoStep] || 'Next Step'}
+          onNext={handleDemoNext}
+          onExit={handleExitDemo}
+          isActionLoading={analyzing || generatingPDF}
+          autoPlay={autoPlay}
+          onToggleAutoPlay={() => setAutoPlay(!autoPlay)}
+        />
+      )}
+
       <main className="max-w-6xl mx-auto px-6 py-8 space-y-6">
         <button
-          onClick={() => navigate('/dashboard')}
+          onClick={() => navigate(`/dashboard${isJudgeDemo ? '?demo=judge' : ''}`)}
           className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-500 hover:text-gray-900 transition"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
@@ -113,13 +224,25 @@ export default function FarmDetail() {
         {/* Hero banner */}
         <div className="bg-white rounded-2xl border border-gray-200/80 p-6 shadow-xs">
           <div className="flex flex-wrap items-center gap-2 mb-3">
-            <span className="text-xs bg-emerald-50 text-emerald-800 border border-emerald-200 px-3 py-1 rounded-full font-semibold flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 bg-emerald-600 rounded-full animate-pulse"></span>
-              Live Sentinel-2 Diagnostic Engine
-            </span>
+            {result?.is_fallback || result?.analysis?.is_fallback ? (
+              <span className="text-xs bg-amber-50 text-amber-900 border border-amber-300 px-3 py-1 rounded-full font-semibold flex items-center gap-1.5 shadow-xs">
+                <span className="w-2 h-2 bg-amber-500 rounded-full animate-pulse"></span>
+                Diagnostic Engine: Local Verified Simulation
+              </span>
+            ) : (
+              <span className="text-xs bg-emerald-50 text-emerald-800 border border-emerald-200 px-3 py-1 rounded-full font-semibold flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 bg-emerald-600 rounded-full animate-pulse"></span>
+                Live Sentinel-2 Diagnostic Engine
+              </span>
+            )}
             <span className="text-xs bg-gray-100 text-gray-700 px-2.5 py-1 rounded-full font-mono">
               PostGIS SRID: EPSG:4326
             </span>
+            {(result?.is_fallback || result?.analysis?.is_fallback) && (
+              <span className="text-xs bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full font-medium">
+                Offline Mode Active · 100% Deterministic
+              </span>
+            )}
           </div>
 
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -143,13 +266,13 @@ export default function FarmDetail() {
           </div>
         </div>
 
-        {/* Demo trigger selector (Ideal for Judges) */}
+        {/* Demo trigger selector */}
         <div className="bg-white rounded-2xl border border-gray-200/80 p-4 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-amber-500 shrink-0" />
             <div>
               <p className="text-xs font-bold text-gray-800">Hackathon Demonstration Scenarios</p>
-              <p className="text-[11px] text-gray-400">Trigger verified rule engine states for judging.</p>
+              <p className="text-[11px] text-gray-400">Trigger verified rule engine states for judging (offline-resilient).</p>
             </div>
           </div>
 
@@ -157,25 +280,37 @@ export default function FarmDetail() {
             <button
               onClick={() => handleAnalyze('example_drought_scenario')}
               disabled={analyzing}
-              className="bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 px-3 py-1.5 rounded-lg text-xs font-bold transition disabled:opacity-50 flex items-center gap-1.5"
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition disabled:opacity-50 flex items-center gap-1.5 ${
+                selectedScenario === 'example_drought_scenario'
+                  ? 'bg-red-600 text-white shadow-xs ring-2 ring-red-400'
+                  : 'bg-red-50 text-red-700 border border-red-200 hover:bg-red-100'
+              }`}
             >
-              <AlertTriangle className="w-3.5 h-3.5 text-red-600" />
+              <AlertTriangle className="w-3.5 h-3.5" />
               Demo: Drought Calamity
             </button>
             <button
               onClick={() => handleAnalyze('example_pest_scenario')}
               disabled={analyzing}
-              className="bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100 px-3 py-1.5 rounded-lg text-xs font-bold transition disabled:opacity-50 flex items-center gap-1.5"
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition disabled:opacity-50 flex items-center gap-1.5 ${
+                selectedScenario === 'example_pest_scenario'
+                  ? 'bg-amber-600 text-white shadow-xs ring-2 ring-amber-400'
+                  : 'bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100'
+              }`}
             >
-              <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
+              <AlertTriangle className="w-3.5 h-3.5" />
               Demo: Pest Anomaly
             </button>
             <button
               onClick={() => handleAnalyze('punjab_farm')}
               disabled={analyzing}
-              className="bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100 px-3 py-1.5 rounded-lg text-xs font-bold transition disabled:opacity-50 flex items-center gap-1.5"
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition disabled:opacity-50 flex items-center gap-1.5 ${
+                selectedScenario === 'punjab_farm'
+                  ? 'bg-emerald-700 text-white shadow-xs ring-2 ring-emerald-400'
+                  : 'bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100'
+              }`}
             >
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+              <CheckCircle2 className="w-3.5 h-3.5" />
               Demo: Normal Health
             </button>
           </div>
@@ -190,8 +325,25 @@ export default function FarmDetail() {
 
         {result ? (
           <div className="space-y-6">
-            {/* PHASE 2: AI RISK SCORE CARD */}
-            <AIRiskScoreCard analysis={result.analysis} farm={farm} />
+            {/* Fallback Mode Informative Status */}
+            {(result?.is_fallback || result?.analysis?.is_fallback) && (
+              <div className="p-4 bg-amber-50 border border-amber-200/90 rounded-2xl text-xs text-amber-900 flex items-start gap-3 shadow-xs">
+                <Sparkles className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                <div className="space-y-0.5">
+                  <p className="font-bold text-amber-950">
+                    Diagnostic Engine: Local Verified Simulation Active
+                  </p>
+                  <p className="text-amber-800 text-[11px] leading-relaxed">
+                    External stress API unavailable — seamlessly operating in Local Verified Simulation mode. Risk indices, multi-temporal satellite timeline, PostGIS cluster alert map, and cryptographic proof packet generation remain fully functional and deterministic.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* PHASE 2: AI RISK SCORE & AGRONOMIC ASSESSMENT */}
+            <div ref={diagnosisRef}>
+              <AIRiskScoreCard analysis={result.analysis} farm={farm} />
+            </div>
 
             {/* TELEMETRY GAUGES */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -267,85 +419,96 @@ export default function FarmDetail() {
             </div>
 
             {/* PHASE 3: SATELLITE TIMELINE */}
-            <SatelliteTimeline currentAnalysis={result.analysis} farm={farm} />
+            <div ref={satelliteRef}>
+              <SatelliteTimeline currentAnalysis={result.analysis} farm={farm} />
+            </div>
 
-            {/* PHASE 4: NEARBY FARMS CALAMITY ALERT MAP (If drought stress detected) */}
-            {(result.alert || result.analysis.stress_type === 'DROUGHT') && (
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-xs text-gray-500 font-bold uppercase tracking-wider">
-                  <span className="flex items-center gap-1.5 text-red-700">
-                    <Radio className="w-4 h-4 text-red-600" />
-                    Village Calamity Cluster (PostGIS Spatial Analysis)
-                  </span>
-                  <span className="font-mono text-[11px] text-gray-400">2.0 km Geodesic Radius</span>
-                </div>
-                <VillageAlertMap alert={result.alert} sourceFarm={farm} radiusKm={2} />
-              </div>
-            )}
+            {/* PHASE 4: VILLAGE IMPACT ALERT MAP */}
+            <div ref={villageRef}>
+              <VillageAlertMap
+                alert={result.alert}
+                sourceFarm={farm}
+                radiusKm={2}
+                scenarioType={result.analysis.stress_type || 'DROUGHT'}
+              />
+            </div>
 
             {/* PHASE 5: PMFBY PROOF PACKET GENERATOR */}
-            {!proofPacket ? (
-              <div className="bg-white rounded-2xl border border-gray-200/80 p-6 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-xs bg-amber-50 text-amber-800 border border-amber-200 px-2.5 py-0.5 rounded-full font-semibold">
-                      PMFBY Claim Ready
-                    </span>
-                    <span className="text-[11px] text-gray-400 font-mono">SHA-256 Tamper-Evident</span>
-                  </div>
-                  <h3 className="text-lg font-bold text-gray-900">Compile Cryptographic Proof Packet</h3>
-                  <p className="text-xs text-gray-500 mt-0.5 max-w-xl leading-relaxed">
-                    Binds Sentinel-2 multi-spectral NDVI telemetry, meteorological drought index, and PostGIS cadastral boundary into a verified PDF signed with SHA-256 integrity hash.
-                  </p>
-                </div>
-                <button
-                  onClick={handleGeneratePDF}
-                  disabled={generatingPDF}
-                  className="bg-amber-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-amber-700 active:scale-[0.99] transition disabled:opacity-50 flex items-center gap-2 shadow-xs shrink-0 text-xs"
-                >
-                  <FileText className="w-4 h-4" />
-                  <span>{generatingPDF ? 'Sealing PDF Evidence...' : 'Generate Proof Packet PDF'}</span>
-                </button>
-              </div>
-            ) : (
-              <div className="bg-white rounded-2xl border border-emerald-300 p-6 shadow-xs space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-emerald-700 rounded-xl flex items-center justify-center text-white shadow-xs">
-                      <FileCheck className="w-5 h-5 text-emerald-200" />
+            <div ref={packetRef}>
+              {!proofPacket ? (
+                <div className="bg-white rounded-2xl border border-gray-200/80 p-6 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-xs bg-amber-50 text-amber-800 border border-amber-200 px-2.5 py-0.5 rounded-full font-semibold">
+                        PMFBY Claim Ready
+                      </span>
+                      <span className="text-[11px] text-gray-400 font-mono">SHA-256 Tamper-Evident</span>
                     </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs bg-emerald-100 text-emerald-800 border border-emerald-200 px-2.5 py-0.5 rounded-full font-bold">
-                          EVIDENCE PACKET SEALED
-                        </span>
-                        <span className="text-xs text-gray-400 font-mono">PKT-#{proofPacket.id}</span>
-                      </div>
-                      <h3 className="text-base font-bold text-gray-900 mt-0.5">
-                        PMFBY Calamity Evidence Ready for Insurance Adjudication
-                      </h3>
-                    </div>
+                    <h3 className="text-lg font-bold text-gray-900">Compile Cryptographic Proof Packet</h3>
+                    <p className="text-xs text-gray-500 mt-0.5 max-w-xl leading-relaxed">
+                      Binds Sentinel-2 multi-spectral NDVI telemetry, meteorological drought index, PostGIS cadastral boundary, and community impact into a verified PDF sealed with SHA-256 integrity hash and QR verification matrix.
+                    </p>
                   </div>
-
                   <button
-                    onClick={downloadPDF}
-                    className="bg-emerald-800 text-white px-5 py-2.5 rounded-xl font-bold hover:bg-emerald-900 active:scale-[0.99] transition flex items-center gap-2 shadow-xs text-xs shrink-0"
+                    onClick={handleGeneratePDF}
+                    disabled={generatingPDF}
+                    className="bg-amber-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-amber-700 active:scale-[0.99] transition disabled:opacity-50 flex items-center gap-2 shadow-xs shrink-0 text-xs"
                   >
-                    <Download className="w-4 h-4" />
-                    <span>Download Signed PDF</span>
+                    <FileText className="w-4 h-4" />
+                    <span>{generatingPDF ? 'Sealing PDF Evidence...' : 'Generate Proof Packet PDF'}</span>
                   </button>
                 </div>
+              ) : (
+                <div className="bg-white rounded-2xl border border-emerald-300 p-6 shadow-xs space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-emerald-700 rounded-xl flex items-center justify-center text-white shadow-xs">
+                        <FileCheck className="w-5 h-5 text-emerald-200" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs bg-emerald-100 text-emerald-800 border border-emerald-200 px-2.5 py-0.5 rounded-full font-bold">
+                            EVIDENCE PACKET SEALED
+                          </span>
+                          <span className="text-xs text-gray-400 font-mono">PKT-#{proofPacket.id}</span>
+                          {proofPacket.verification_id && (
+                            <span className="text-[10px] bg-slate-900 text-emerald-300 px-2 py-0.5 rounded font-mono font-bold">
+                              {proofPacket.verification_id}
+                            </span>
+                          )}
+                        </div>
+                        <h3 className="text-base font-bold text-gray-900 mt-0.5">
+                          PMFBY Calamity Evidence Ready for Insurance Adjudication
+                        </h3>
+                      </div>
+                    </div>
 
-                <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 text-xs">
-                  <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block mb-1">
-                    SHA-256 Tamper-Evident Evidence Hash
-                  </span>
-                  <code className="text-xs font-mono font-bold text-emerald-900 break-all select-all">
-                    {proofPacket.evidence_hash}
-                  </code>
+                    <button
+                      onClick={downloadPDF}
+                      className="bg-emerald-800 text-white px-5 py-2.5 rounded-xl font-bold hover:bg-emerald-900 active:scale-[0.99] transition flex items-center gap-2 shadow-xs text-xs shrink-0"
+                    >
+                      <Download className="w-4 h-4" />
+                      <span>Download Signed PDF</span>
+                    </button>
+                  </div>
+
+                  <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div>
+                      <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block mb-1">
+                        SHA-256 Tamper-Evident Evidence Hash
+                      </span>
+                      <code className="text-xs font-mono font-bold text-emerald-900 break-all select-all">
+                        {proofPacket.evidence_hash}
+                      </code>
+                    </div>
+                    <div className="shrink-0 flex items-center gap-1 text-[11px] text-emerald-800 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-lg font-mono">
+                      <QrCode className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>QR Seal Embedded</span>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         ) : (
           /* Initial Empty Scan Prompt */

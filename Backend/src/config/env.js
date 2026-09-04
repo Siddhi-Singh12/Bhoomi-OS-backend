@@ -11,7 +11,7 @@ module.exports = {
     password: process.env.DB_PASSWORD,
     port: parseInt(process.env.DB_PORT || '5432', 10),
   },
-  stressEngineUrl: process.env.STRESS_ENGINE_URL || 'http://127.0.0.1:8000',
+  stressEngineUrl: process.env.STRESS_ENGINE_URL || 'https://bhoomi-os-stress-detection.onrender.com',
   sentinel: {
     clientId: process.env.SENTINEL_CLIENT_ID,
     clientSecret: process.env.SENTINEL_CLIENT_SECRET,

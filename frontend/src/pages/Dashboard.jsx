@@ -1,15 +1,19 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import apiClient from '../api/client';
 import AppHeader from '../components/AppHeader';
-import { Plus, ScanLine, MapPin, Bell, Layers, ShieldCheck, ChevronRight, Activity, Sprout, Search } from 'lucide-react';
+import JudgeDemoBar from '../components/JudgeDemoBar';
+import { Plus, ScanLine, MapPin, Bell, Layers, ShieldCheck, ChevronRight, Activity, Sprout, Search, Zap } from 'lucide-react';
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const location = useLocation();
   const farmer = JSON.parse(localStorage.getItem('farmer') || '{}');
   const [farms, setFarms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+
+  const isJudgeDemo = localStorage.getItem('judgeDemo') === 'true' || location.search.includes('demo=judge');
 
   useEffect(() => {
     if (!farmer.id) {
@@ -30,6 +34,18 @@ export default function Dashboard() {
     }
   }
 
+  function handleDemoNext() {
+    // Advance to Step 2: Open Farm #1 Wheat
+    const targetFarm = farms.find(f => f.id === 1) || farms[0];
+    const targetId = targetFarm ? targetFarm.id : 1;
+    navigate(`/farm/${targetId}?demo=judge`);
+  }
+
+  function handleExitDemo() {
+    localStorage.removeItem('judgeDemo');
+    navigate('/dashboard');
+  }
+
   const totalHectares = farms.reduce((acc, f) => acc + (parseFloat(f.area_hectares) || 0), 0);
   const filteredFarms = farms.filter((f) =>
     (f.crop_type || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -39,6 +55,16 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-gray-50/70">
       <AppHeader farmer={farmer} />
+
+      {isJudgeDemo && (
+        <JudgeDemoBar
+          currentStep={2}
+          totalSteps={6}
+          nextLabel="Open Plot #1 (Wheat)"
+          onNext={handleDemoNext}
+          onExit={handleExitDemo}
+        />
+      )}
 
       <main className="max-w-7xl mx-auto px-6 py-8 space-y-6">
         {/* KPI Stats Overview */}
@@ -148,14 +174,29 @@ export default function Dashboard() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {filteredFarms.map((farm) => (
-              <div
-                key={farm.id}
-                onClick={() => navigate(`/farm/${farm.id}`)}
-                className="bg-white rounded-2xl border border-gray-200/80 p-5 cursor-pointer hover:border-emerald-600/60 hover:shadow-md transition-all duration-200 group flex flex-col justify-between"
-              >
-                <div>
-                  <div className="flex items-start justify-between mb-3">
+            {filteredFarms.map((farm) => {
+              const isTargetDemoFarm = isJudgeDemo && (farm.id === 1 || (farm.crop_type || '').toLowerCase().includes('wheat'));
+              return (
+                <div
+                  key={farm.id}
+                  onClick={() => navigate(`/farm/${farm.id}${isJudgeDemo ? '?demo=judge' : ''}`)}
+                  className={`bg-white rounded-2xl border p-5 cursor-pointer transition-all duration-200 group flex flex-col justify-between ${
+                    isTargetDemoFarm
+                      ? 'border-emerald-500 ring-2 ring-emerald-500/60 shadow-lg bg-emerald-50/10'
+                      : 'border-gray-200/80 hover:border-emerald-600/60 hover:shadow-md'
+                  }`}
+                >
+                  <div>
+                    {isTargetDemoFarm && (
+                      <div className="mb-2 bg-emerald-100/90 text-emerald-950 border border-emerald-300 px-2.5 py-1 rounded-lg text-[11px] font-bold flex items-center justify-between">
+                        <span className="flex items-center gap-1.5">
+                          <Zap className="w-3.5 h-3.5 text-emerald-700" />
+                          Judge Demo Target Parcel
+                        </span>
+                        <span className="font-mono text-[10px] text-emerald-800 uppercase">Click to Open</span>
+                      </div>
+                    )}
+                    <div className="flex items-start justify-between mb-3">
                     <span className="text-xs bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1 font-mono">
                       <ShieldCheck className="w-3 h-3 text-emerald-600" />
                       Plot #{farm.id}
@@ -185,7 +226,8 @@ export default function Dashboard() {
                   </span>
                 </div>
               </div>
-            ))}
+            );
+          })}
           </div>
         )}
       </main>

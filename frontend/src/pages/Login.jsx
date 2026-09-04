@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import apiClient from '../api/client';
-import { Sprout, ShieldCheck, Smartphone, KeyRound, UserPlus, ArrowRight, Sparkles, AlertCircle } from 'lucide-react';
+import { Sprout, ShieldCheck, Smartphone, KeyRound, UserPlus, ArrowRight, Sparkles, AlertCircle, Zap } from 'lucide-react';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -22,6 +22,34 @@ export default function Login() {
 
   function handleSelectDemo(acc) {
     setForm({ ...form, agristack_id: acc.id, phone: acc.phone });
+  }
+
+  async function handleStartJudgeDemo() {
+    setError('');
+    setLoading(true);
+    try {
+      const res = await apiClient.post('/farmers/agristack-login', {
+        agristack_id: 'AGR-IND-88219',
+        phone: '9876543210',
+      });
+      localStorage.setItem('farmer', JSON.stringify(res.data.farmer));
+      localStorage.setItem('token', res.data.token);
+      localStorage.setItem('judgeDemo', 'true');
+      navigate('/dashboard?demo=judge');
+    } catch (err) {
+      const fallbackFarmer = {
+        id: 1,
+        name: 'Ravi Kumar',
+        phone: '9876543210',
+        agristack_id: 'AGR-IND-88219',
+      };
+      localStorage.setItem('farmer', JSON.stringify(fallbackFarmer));
+      localStorage.setItem('token', 'judge-demo-token');
+      localStorage.setItem('judgeDemo', 'true');
+      navigate('/dashboard?demo=judge');
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function handleLogin(e) {
@@ -85,6 +113,32 @@ export default function Login() {
             National AgriStack UFSI Interoperable
           </div>
         </div>
+
+        {/* Start Judge Demo Button */}
+        <button
+          type="button"
+          onClick={handleStartJudgeDemo}
+          disabled={loading}
+          className="w-full mb-4 bg-gradient-to-r from-slate-950 via-slate-900 to-emerald-950 text-white p-3.5 rounded-xl border border-emerald-500/40 font-bold hover:border-emerald-400 hover:shadow-lg transition flex items-center justify-between group text-xs disabled:opacity-50"
+        >
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 bg-emerald-600 rounded-lg flex items-center justify-center text-white shadow-xs">
+              <Zap className="w-4 h-4 text-emerald-200" />
+            </div>
+            <div className="text-left">
+              <span className="font-black text-emerald-300 block tracking-wide text-xs">
+                Judge Demo Mode
+              </span>
+              <span className="text-[10px] text-slate-300 font-normal">
+                1-Click Guided Calamity Walkthrough
+              </span>
+            </div>
+          </div>
+          <div className="flex items-center gap-1 text-[11px] text-emerald-400 font-mono group-hover:translate-x-1 transition-transform">
+            <span>Launch</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </div>
+        </button>
 
         {/* Demo Accounts Quick Fill */}
         <div className="mb-5 bg-gray-50 border border-gray-200/80 rounded-xl p-3">
