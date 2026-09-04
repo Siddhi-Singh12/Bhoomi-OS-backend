@@ -7,65 +7,64 @@ async function createProofPacket({ analysis_id, claim_loss_percent }) {
   let fullData = null;
 
   // 1. Fetch complete analysis + farm + farmer metadata
-  try {
-    const infoQuery = `
-      SELECT 
-        a.id AS analysis_id,
-        a.farm_id,
-        a.ndvi,
-        a.ndwi,
-        a.rainfall_mm,
-        a.temperature_c,
-        a.stress_type,
-        a.confidence,
-        a.rule_triggered,
-        a.analyzed_at,
-        f.crop_type AS claim_crop_type,
-        f.area_hectares AS claim_area_hectares,
-        ST_AsGeoJSON(f.boundary) AS boundary,
-        fm.id AS farmer_id,
-        fm.name AS farmer_name,
-        fm.phone AS farmer_phone,
-        fm.agristack_id
-      FROM analyses a
-      JOIN farms f ON f.id = a.farm_id
-      JOIN farmers fm ON fm.id = f.farmer_id
-      WHERE a.id = $1;
-    `;
-    const infoResult = await pool.query(infoQuery, [analysis_id]);
+  //
+  // IMPORTANT: there used to be a catch-all fallback here that silently
+  // generated a fake proof packet (fake farmer "Ravi Kumar", fake
+  // AgriStack ID, hardcoded "DROUGHT" stress) whenever this DB lookup
+  // failed for ANY reason. For a document whose entire purpose is to be
+  // trustworthy "evidence" for an insurance claim, silently fabricating
+  // data on failure is worse than just failing loudly — a farmer could
+  // end up with a proof packet that doesn't correspond to their real farm
+  // or real satellite reading. If this lookup fails, we now let the error
+  // propagate so the caller gets a clear 404/500 instead of fake evidence.
+  const infoQuery = `
+    SELECT 
+      a.id AS analysis_id,
+      a.farm_id,
+      a.ndvi,
+      a.ndwi,
+      a.rainfall_mm,
+      a.temperature_c,
+      a.stress_type,
+      a.confidence,
+      a.rule_triggered,
+      a.analyzed_at,
+      f.crop_type AS claim_crop_type,
+      f.area_hectares AS claim_area_hectares,
+      ST_AsGeoJSON(f.boundary) AS boundary,
+      fm.id AS farmer_id,
+      fm.name AS farmer_name,
+      fm.phone AS farmer_phone,
+      fm.agristack_id
+    FROM analyses a
+    JOIN farms f ON f.id = a.farm_id
+    JOIN farmers fm ON fm.id = f.farmer_id
+    WHERE a.id = $1;
+  `;
+  const infoResult = await pool.query(infoQuery, [analysis_id]);
 
-    if (infoResult.rows.length === 0) {
-      const err = new Error('analysis_id does not exist');
-      err.code = 'ANALYSIS_NOT_FOUND';
-      throw err;
-    }
-
-    fullData = infoResult.rows[0];
-  } catch (dbErr) {
-    if (dbErr.code === 'ANALYSIS_NOT_FOUND') throw dbErr;
-    logger.warn(`Database lookup skipped in proof packet creation: ${dbErr.message}. Using synthetic claim packet.`);
-    // Synthetic fallback for offline test/demo
-    fullData = {
-      analysis_id,
-      farm_id: 1,
-      farmer_id: 1,
-      farmer_name: 'Ravi Kumar',
-      farmer_phone: '9876543210',
-      agristack_id: 'AGR-IND-88219',
-      claim_crop_type: 'Wheat',
-      claim_area_hectares: 2.35,
-      ndvi: 0.22,
-      ndwi: 0.08,
-      rainfall_mm: 12.5,
-      temperature_c: 37.8,
-      stress_type: 'DROUGHT',
-      confidence: 0.88,
-      rule_triggered: 'R1_drought_low_ndvi_dry_spell',
-      analyzed_at: new Date().toISOString(),
-    };
+  if (infoResult.rows.length === 0) {
+    const err = new Error('analysis_id does not exist');
+    err.code = 'ANALYSIS_NOT_FOUND';
+    throw err;
   }
 
-  const lossPercent = claim_loss_percent != null ? Number(claim_loss_percent) : 40.0;
+  fullData = infoResult.rows[0];
+
+  // claim_loss_percent should reflect the actual detected stress, not a
+  // hardcoded number. If the caller didn't explicitly provide one:
+  //   - stress_type NONE  -> 0 (no stress was detected, so no loss claim)
+  //   - DROUGHT / PEST_RISK -> we don't have an official PMFBY loss
+  //     formula yet (this is a known MVP gap), so we leave it at 0 and
+  //     rely on the caller/operator to supply a real assessed figure
+  //     rather than inventing one.
+  let lossPercent;
+  if (claim_loss_percent != null) {
+    lossPercent = Number(claim_loss_percent);
+  } else {
+    lossPercent = 0;
+  }
+
   fullData.claim_loss_percent = lossPercent;
   fullData.generated_at = new Date().toISOString();
 
@@ -79,36 +78,24 @@ async function createProofPacket({ analysis_id, claim_loss_percent }) {
   const pdfUrl = await saveProofPacketPDF(filename, pdfBuffer);
 
   // 4. Save to Database
-  let savedRecord = null;
-  try {
-    const insertQuery = `
-      INSERT INTO proof_packets (analysis_id, pdf_url, evidence_hash, claim_crop_type, claim_loss_percent, claim_area_hectares)
-      VALUES ($1, $2, $3, $4, $5, $6)
-      RETURNING *;
-    `;
-    const values = [
-      analysis_id,
-      pdfUrl,
-      evidenceHash,
-      fullData.claim_crop_type,
-      lossPercent,
-      fullData.claim_area_hectares,
-    ];
-    const result = await pool.query(insertQuery, values);
-    savedRecord = result.rows[0];
-  } catch (insertDbErr) {
-    logger.warn(`Could not save proof packet to DB: ${insertDbErr.message}`);
-    savedRecord = {
-      id: Math.floor(Date.now() % 100000),
-      analysis_id,
-      pdf_url: pdfUrl,
-      evidence_hash: evidenceHash,
-      claim_crop_type: fullData.claim_crop_type,
-      claim_loss_percent: lossPercent,
-      claim_area_hectares: fullData.claim_area_hectares,
-      generated_at: fullData.generated_at,
-    };
-  }
+  // (No more silent fake-record fallback here either — if the insert
+  // fails, that's a real error the caller should see, not a made-up
+  // in-memory record that looks saved but isn't.)
+  const insertQuery = `
+    INSERT INTO proof_packets (analysis_id, pdf_url, evidence_hash, claim_crop_type, claim_loss_percent, claim_area_hectares)
+    VALUES ($1, $2, $3, $4, $5, $6)
+    RETURNING *;
+  `;
+  const values = [
+    analysis_id,
+    pdfUrl,
+    evidenceHash,
+    fullData.claim_crop_type,
+    lossPercent,
+    fullData.claim_area_hectares,
+  ];
+  const result = await pool.query(insertQuery, values);
+  const savedRecord = result.rows[0];
 
   return {
     ...savedRecord,
@@ -122,56 +109,46 @@ async function createProofPacket({ analysis_id, claim_loss_percent }) {
 }
 
 async function getProofPacketById(id) {
-  try {
-    const query = `
-      SELECT 
-        p.*,
-        a.farm_id,
-        a.ndvi,
-        a.ndwi,
-        a.rainfall_mm,
-        a.temperature_c,
-        a.stress_type,
-        a.confidence,
-        a.rule_triggered,
-        fm.id AS farmer_id,
-        fm.name AS farmer_name,
-        fm.phone AS farmer_phone,
-        fm.agristack_id
-      FROM proof_packets p
-      JOIN analyses a ON a.id = p.analysis_id
-      JOIN farms f ON f.id = a.farm_id
-      JOIN farmers fm ON fm.id = f.farmer_id
-      WHERE p.id = $1;
-    `;
-    const result = await pool.query(query, [id]);
-    return result.rows[0] || null;
-  } catch (err) {
-    logger.warn(`DB getProofPacketById failed: ${err.message}`);
-    return null;
-  }
+  const query = `
+    SELECT 
+      p.*,
+      a.farm_id,
+      a.ndvi,
+      a.ndwi,
+      a.rainfall_mm,
+      a.temperature_c,
+      a.stress_type,
+      a.confidence,
+      a.rule_triggered,
+      fm.id AS farmer_id,
+      fm.name AS farmer_name,
+      fm.phone AS farmer_phone,
+      fm.agristack_id
+    FROM proof_packets p
+    JOIN analyses a ON a.id = p.analysis_id
+    JOIN farms f ON f.id = a.farm_id
+    JOIN farmers fm ON fm.id = f.farmer_id
+    WHERE p.id = $1;
+  `;
+  const result = await pool.query(query, [id]);
+  return result.rows[0] || null;
 }
 
 async function getAllProofPackets() {
-  try {
-    const query = `
-      SELECT 
-        p.*,
-        a.stress_type,
-        fm.name AS farmer_name,
-        fm.agristack_id
-      FROM proof_packets p
-      JOIN analyses a ON a.id = p.analysis_id
-      JOIN farms f ON f.id = a.farm_id
-      JOIN farmers fm ON fm.id = f.farmer_id
-      ORDER BY p.generated_at DESC;
-    `;
-    const result = await pool.query(query);
-    return result.rows;
-  } catch (err) {
-    logger.warn(`DB getAllProofPackets failed: ${err.message}`);
-    return [];
-  }
+  const query = `
+    SELECT 
+      p.*,
+      a.stress_type,
+      fm.name AS farmer_name,
+      fm.agristack_id
+    FROM proof_packets p
+    JOIN analyses a ON a.id = p.analysis_id
+    JOIN farms f ON f.id = a.farm_id
+    JOIN farmers fm ON fm.id = f.farmer_id
+    ORDER BY p.generated_at DESC;
+  `;
+  const result = await pool.query(query);
+  return result.rows;
 }
 
 module.exports = {

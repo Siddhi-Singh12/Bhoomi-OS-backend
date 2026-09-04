@@ -24,7 +24,7 @@ async function evaluateStress(boundaryGeoJSON) {
 
   try {
     const response = await axios.post(`${STRESS_SERVICE_BASE_URL}/analyze-stress`, requestBody, {
-      timeout: 15000,
+      timeout: 60000,
     });
 
     const data = response.data;

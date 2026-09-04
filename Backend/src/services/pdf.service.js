@@ -29,6 +29,22 @@ function computeEvidenceHash(packetData) {
 }
 
 /**
+ * Returns an evidence summary sentence that actually matches the detected
+ * stress type, instead of always describing a drought scenario.
+ */
+function getEvidenceSummary(stressType, ruleTriggered) {
+  const type = (stressType || 'NONE').toUpperCase();
+
+  if (type === 'DROUGHT') {
+    return 'Sensed multi-band reflectance exhibits vegetative moisture deficit coinciding with a dry spell and elevated thermal radiation, consistent with drought stress indicators.';
+  }
+  if (type === 'PEST_RISK') {
+    return 'Sensed spectral signatures indicate vegetation stress patterns consistent with elevated pest-risk conditions, alongside recent rainfall and moisture levels.';
+  }
+  return `NDVI and weather signals for this period are within the expected normal range. No stress threshold was crossed (rule: ${ruleTriggered || 'N/A'}).`;
+}
+
+/**
  * Generates a high-quality PMFBY Proof Packet PDF document as a Buffer
  */
 async function generateProofPacketPDF(data) {
@@ -58,10 +74,10 @@ async function generateProofPacketPDF(data) {
 
       // --- HEADER SECTION ---
       doc.rect(40, 40, 515, 60).fill(primaryColor);
-      
+
       doc.fillColor('#FFFFFF').fontSize(18).font('Helvetica-Bold')
         .text('BHOOMI OS — AGRICULTURAL EVIDENCE LAYER', 55, 52);
-      
+
       doc.fontSize(10).font('Helvetica')
         .text('Automated Sentinel-2 & Meteorological Proof Packet for PMFBY Claims', 55, 75);
 
@@ -97,67 +113,105 @@ async function generateProofPacketPDF(data) {
       }
 
       // --- SECTION 1: FARMER & LAND REGISTRY ---
+      // NOTE: fallbacks below only fire when a field is genuinely missing
+      // from the DB record — they must never silently replace a real null
+      // with a fake-looking value for anything that reads like an official
+      // identifier. agristack_id intentionally has NO fake-ID fallback.
       yPos = renderSectionTitle('1. FARMER & AGRISTACK REGISTRY DETAILS', yPos);
-      yPos = renderGridRow('Farmer Name:', data.farmer_name || 'Ravi Kumar', 'AgriStack ID:', data.agristack_id || 'AGR-IND-88219', yPos);
-      yPos = renderGridRow('Phone Number:', data.farmer_phone || '9876543210', 'Farmer ID (Local):', `FRM-${data.farmer_id || 1}`, yPos);
-      yPos = renderGridRow('Crop Sown:', data.claim_crop_type || 'Wheat', 'Total Area:', `${data.claim_area_hectares || '2.35'} Hectares`, yPos);
+      yPos = renderGridRow(
+        'Farmer Name:', data.farmer_name || 'N/A',
+        'AgriStack ID:', data.agristack_id || 'Not linked (MVP mock)',
+        yPos
+      );
+      yPos = renderGridRow('Phone Number:', data.farmer_phone || 'N/A', 'Farmer ID (Local):', `FRM-${data.farmer_id || 'N/A'}`, yPos);
+      yPos = renderGridRow('Crop Sown:', data.claim_crop_type || 'Not specified', 'Total Area:', `${data.claim_area_hectares ?? 'N/A'} Hectares`, yPos);
 
       yPos += 8;
 
       // --- SECTION 2: REMOTE SENSING & SPECTRAL AUDIT ---
       yPos = renderSectionTitle('2. SENTINEL-2 L2A SPECTRAL AUDIT (COPERNICUS SATELLITE)', yPos);
-      yPos = renderGridRow('Canopy NDVI:', `${data.ndvi ?? '0.220'} (Vegetation Index)`, 'Baseline Expected:', '0.500 NDVI', yPos);
-      yPos = renderGridRow('Water Index (NDWI):', `${data.ndwi ?? '0.080'} (Moisture Index)`, 'Vegetation Deficit:', `${data.ndvi ? Math.max(0, Math.round(((0.5 - data.ndvi)/0.5)*100)) : 44}% Below Norm`, yPos);
+      yPos = renderGridRow(
+        'Canopy NDVI:', data.ndvi != null ? `${data.ndvi} (Vegetation Index)` : 'N/A',
+        'Baseline Expected:', '0.500 NDVI',
+        yPos
+      );
+      yPos = renderGridRow(
+        'Water Index (NDWI):', data.ndwi != null ? `${data.ndwi} (Moisture Index)` : 'N/A',
+        'Vegetation Deficit:', data.ndvi != null ? `${Math.max(0, Math.round(((0.5 - data.ndvi) / 0.5) * 100))}% Below Norm` : 'N/A',
+        yPos
+      );
       yPos = renderGridRow('Satellite Mission:', 'Copernicus Sentinel-2 Harmonized', 'Spatial Resolution:', '10m Multi-spectral Pixel', yPos);
 
       yPos += 8;
 
       // --- SECTION 3: METEOROLOGICAL TELEMETRY AUDIT ---
       yPos = renderSectionTitle('3. METEOROLOGICAL TELEMETRY AUDIT (OPEN-METEO 7-DAY)', yPos);
-      yPos = renderGridRow('Cumulative 7d Rain:', `${data.rainfall_mm ?? '12.5'} mm`, 'Drought Threshold:', '< 20.0 mm (Deficit)', yPos);
-      yPos = renderGridRow('Avg Max Temp:', `${data.temperature_c ?? '37.8'} °C`, 'Heat Index Stress:', data.temperature_c > 35 ? 'HIGH (Exceeds 35°C)' : 'MODERATE', yPos);
+      yPos = renderGridRow(
+        'Cumulative 7d Rain:', data.rainfall_mm != null ? `${data.rainfall_mm} mm` : 'N/A',
+        'Drought Threshold:', '< 10.0 mm (Deficit)',
+        yPos
+      );
+      yPos = renderGridRow(
+        'Avg Max Temp:', data.temperature_c != null ? `${data.temperature_c} °C` : 'N/A',
+        'Heat Index Stress:', data.temperature_c > 35 ? 'HIGH (Exceeds 35°C)' : (data.temperature_c != null ? 'NORMAL' : 'N/A'),
+        yPos
+      );
 
       yPos += 8;
 
       // --- SECTION 4: STRESS DETERMINATION & RULE CONCLUSION ---
       yPos = renderSectionTitle('4. AUTOMATED STRESS DETERMINATION & PMFBY CLAIM ADVICE', yPos);
-      
-      const isDrought = (data.stress_type || '').toUpperCase() === 'DROUGHT';
+
+      const stressType = (data.stress_type || 'NONE').toUpperCase();
+      const isDrought = stressType === 'DROUGHT';
       const stressBadgeColor = isDrought ? dangerColor : primaryColor;
-      
+
       doc.rect(50, yPos, 140, 22).fill(stressBadgeColor);
       doc.fillColor('#FFFFFF').fontSize(10).font('Helvetica-Bold')
-        .text(`STRESS: ${data.stress_type || 'DROUGHT'}`, 60, yPos + 6);
+        .text(`STRESS: ${stressType}`, 60, yPos + 6);
 
       doc.fillColor(darkColor).fontSize(9).font('Helvetica')
-        .text(`Triggered Rule: ${data.rule_triggered || 'R1_drought_low_ndvi_dry_spell'}`, 210, yPos + 6);
+        .text(`Triggered Rule: ${data.rule_triggered || 'N/A'}`, 210, yPos + 6);
       yPos += 30;
 
-      yPos = renderGridRow('Assessed Crop Loss:', `${data.claim_loss_percent || 40}% Estimated Yield Loss`, 'Confidence Score:', `${Math.round((data.confidence || 0.88) * 100)}% Verified`, yPos);
-      
+      // claim_loss_percent should reflect the actual detected stress —
+      // expected to already be set correctly upstream in
+      // proofPacket.controller.js; we just avoid inventing a non-zero
+      // number here if it's missing rather than showing a fake default.
+      const lossPercent = data.claim_loss_percent != null ? data.claim_loss_percent : 0;
+
+      yPos = renderGridRow(
+        'Assessed Crop Loss:', `${lossPercent}% Estimated Yield Loss`,
+        'Confidence Score:', `${Math.round((data.confidence ?? 0) * 100)}% Verified`,
+        yPos
+      );
+
       doc.fillColor('#374151').fontSize(8.5).font('Helvetica-Oblique')
-        .text('Evidence Summary: Sensed multi-band reflectance exhibits critical vegetative moisture collapse coinciding with unbroken dry spell and high thermal radiation during reproductive crop phase.', 50, yPos, { width: 490 });
-      
+        .text(`Evidence Summary: ${getEvidenceSummary(data.stress_type, data.rule_triggered)}`, 50, yPos, { width: 490 });
+
       yPos += 32;
 
       // --- SECTION 5: CRYPTOGRAPHIC VERIFICATION & IMMUTABLE HASH ---
       yPos = renderSectionTitle('5. CRYPTOGRAPHIC VERIFICATION & AUDIT HASH', yPos);
-      
+
       const hash = data.evidence_hash || computeEvidenceHash(data);
-      
+
       doc.rect(40, yPos, 515, 45).fill('#F0FDF4').stroke('#86EFAC');
       doc.fillColor('#166534').fontSize(8).font('Helvetica-Bold')
         .text('SHA-256 EVIDENCE INTEGRITY HASH (TAMPER-EVIDENT):', 50, yPos + 8);
-      
+
       doc.fillColor('#14532D').fontSize(8).font('Courier')
         .text(hash, 50, yPos + 22, { width: 495 });
 
       yPos += 55;
 
       // --- FOOTER ---
+      // Removed the fabricated "Compliant with PMFBY Localized Calamity
+      // Guidelines 2026" claim — compliance with such a guideline has not
+      // been verified, and stating it as fact would be misleading.
       doc.rect(40, 770, 515, 30).fill('#FAFAFA');
       doc.fillColor('#6B7280').fontSize(7.5).font('Helvetica')
-        .text('Generated by Bhoomi OS Verified Evidence Layer | Compliant with PMFBY Localized Calamity Guidelines 2026', 50, 778)
+        .text('Generated by Bhoomi OS Verified Evidence Layer | MVP demonstration — not an officially validated PMFBY document', 50, 778)
         .text('This digital proof packet is automatically sealed with satellite telemetry and weather sensor timestamps.', 50, 788);
 
       doc.end();
