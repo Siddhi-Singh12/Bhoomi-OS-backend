@@ -16,7 +16,7 @@ async function evaluateStress(boundaryGeoJSON, demoScenario = null) {
     let data;
 
     if (demoScenario) {
-      const response = await axios.get(`${STRESS_SERVICE_BASE_URL}/demo/${demoScenario}`, { timeout: 15000 });
+      const response = await axios.get(`${STRESS_SERVICE_BASE_URL}/demo/${demoScenario}`, { timeout: 30000 });
       data = response.data;
     } else {
       const today = new Date();
@@ -29,7 +29,7 @@ async function evaluateStress(boundaryGeoJSON, demoScenario = null) {
         end_date: today.toISOString().split('T')[0],
       };
 
-      const response = await axios.post(`${STRESS_SERVICE_BASE_URL}/analyze-stress`, requestBody, { timeout: 15000 });
+      const response = await axios.post(`${STRESS_SERVICE_BASE_URL}/analyze-stress`, requestBody, { timeout: 30000 });
       data = response.data;
     }
 
@@ -58,29 +58,4 @@ async function evaluateStress(boundaryGeoJSON, demoScenario = null) {
   }
 }
 
-async function evaluateStressDemo(scenarioName) {
-  try {
-    const response = await axios.get(`${STRESS_SERVICE_BASE_URL}/demo/${scenarioName}`, {
-      timeout: 15000,
-    });
-    const data = response.data;
-    return {
-      stress_type: normalizeStressType(data.stress_type),
-      rule_triggered: data.rule_id,
-      confidence: data.confidence,
-      ndvi: data.signals?.ndvi ?? null,
-      ndwi: data.signals?.ndwi ?? null,
-      rainfall_mm: data.signals?.rainfall_7d_mm ?? null,
-      temperature_c: data.signals?.avg_temp_c ?? null,
-      explanation: data.explanation,
-      satellite_date: data.satellite_date,
-    };
-  } catch (err) {
-    console.error('DEMO SCENARIO ERROR:', err.message);
-    const wrapped = new Error('Demo scenario unavailable');
-    wrapped.code = 'STRESS_SERVICE_UNAVAILABLE';
-    throw wrapped;
-  }
-}
-
-module.exports = { evaluateStress,evaluateStressDemo};
+module.exports = { evaluateStress };
