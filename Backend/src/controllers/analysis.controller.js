@@ -5,7 +5,7 @@ const { findNearbyFarms, createAlert } = require('../models/alert.model');
 
 async function runAnalysis(req, res) {
   try {
-    const { farm_id } = req.body;
+    const { farm_id,demo_scenario  } = req.body;
 
     if (!farm_id) {
       return res.status(400).json({ success: false, error: 'farm_id is required' });
@@ -17,7 +17,7 @@ async function runAnalysis(req, res) {
     }
 
     const boundaryGeoJSON = farm.boundary;
-    const result = await evaluateStress(boundaryGeoJSON);
+    const result = await evaluateStress(boundaryGeoJSON, demo_scenario || null);
 
     const analysis = await createAnalysis({
       farm_id,
