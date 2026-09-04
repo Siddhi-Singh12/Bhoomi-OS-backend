@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import apiClient from '../api/client';
+import AppHeader from '../components/AppHeader';
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -35,34 +36,7 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white border-b px-6 py-4 flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-emerald-800">BHOOMI OS</h1>
-          <p className="text-xs text-gray-500">Verified Evidence Layer</p>
-        </div>
-        <div className="flex items-center gap-4">
-          <span className="text-xs bg-amber-100 text-amber-800 px-2.5 py-1 rounded-full font-medium">
-            AgriStack: Simulated Mode
-          </span>
-          <div className="text-right">
-            <p className="text-sm font-medium text-gray-800">{farmer.name}</p>
-            <p className="text-xs text-gray-500">{farmer.phone}</p>
-          </div>
-
-          <button
-            onClick={() => navigate('/alerts')}
-            className="text-sm text-red-600 font-medium hover:underline"
-          >
-            🔔 View Alerts
-          </button>
-          <button
-            onClick={handleLogout}
-            className="text-sm text-red-600 hover:underline"
-          >
-            Logout
-          </button>
-        </div>
-      </header>
+      <AppHeader farmer={farmer} />
 
       {/* Content */}
       <main className="max-w-5xl mx-auto px-6 py-8">
