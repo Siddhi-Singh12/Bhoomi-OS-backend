@@ -1,11 +1,11 @@
 const { createAnalysis, getAnalysisById } = require('../models/analysis.model');
 const { getFarmById } = require('../models/farm.model');
 const { evaluateStress } = require('../services/rulesEngine.service');
-const { findNearbyFarms, createAlert } = require('../models/alert.model');
+const { findNearbyFarms, getNearbyFarmsDetails, createAlert } = require('../models/alert.model');
 
 async function runAnalysis(req, res) {
   try {
-    const { farm_id,demo_scenario  } = req.body;
+    const { farm_id, demo_scenario } = req.body;
 
     if (!farm_id) {
       return res.status(400).json({ success: false, error: 'farm_id is required' });
@@ -30,38 +30,58 @@ async function runAnalysis(req, res) {
       rule_triggered: result.rule_triggered,
     });
 
+    let nearbyFarms = [];
+    try {
+      nearbyFarms = await getNearbyFarmsDetails(farm_id, 2);
+    } catch (nearbyErr) {
+      nearbyFarms = [];
+    }
+    const nearbyFarmIds = nearbyFarms.map((f) => f.id);
+
     let alert = null;
-    if (result.stress_type === 'DROUGHT') {
-      let nearbyFarmIds = [];
-      try {
-        nearbyFarmIds = await findNearbyFarms(farm_id, 2);
-      } catch (nearbyErr) {
-        nearbyFarmIds = [];
-      }
+    if (result.stress_type === 'DROUGHT' || result.stress_type === 'PEST_RISK') {
+      const isDrought = result.stress_type === 'DROUGHT';
+      const alertType = isDrought ? 'VILLAGE_LEVEL_DROUGHT' : 'VILLAGE_LEVEL_PEST';
+      const stressLabel = isDrought ? 'Drought calamity' : 'Pest risk anomaly';
+      const msg = `${stressLabel} detected on farm #${farm_id} (${farm.crop_type || 'Crop'}). ${nearbyFarmIds.length} neighboring holding(s) within 2km may be affected.`;
 
       try {
         const createdAlert = await createAlert({
           source_farm_id: farm_id,
-          alert_type: 'VILLAGE_LEVEL_DROUGHT',
+          alert_type: alertType,
           radius_km: 2,
           affected_farm_ids: nearbyFarmIds,
-          message: `Drought detected on farm ${farm_id}. ${nearbyFarmIds.length} nearby farm(s) within 2km may be affected.`,
+          message: msg,
         });
         alert = {
           ...createdAlert,
+          event_type: result.stress_type,
+          severity: isDrought ? 'CRITICAL' : 'HIGH',
+          centroid: farm.centroid,
           lat: farm.centroid?.lat,
           lng: farm.centroid?.lng,
+          crop_type: farm.crop_type,
+          farmer_name: farm.farmer_name,
+          farmer_phone: farm.farmer_phone,
+          nearbyFarms,
         };
       } catch (alertErr) {
         alert = {
           id: Date.now(),
           source_farm_id: farm_id,
-          alert_type: 'VILLAGE_LEVEL_DROUGHT',
+          alert_type: alertType,
+          event_type: result.stress_type,
+          severity: isDrought ? 'CRITICAL' : 'HIGH',
           radius_km: 2,
           affected_farm_ids: nearbyFarmIds,
+          centroid: farm.centroid,
           lat: farm.centroid?.lat,
           lng: farm.centroid?.lng,
-          message: `Drought detected on farm ${farm_id}. Adjacent holdings within 2km may be affected.`,
+          crop_type: farm.crop_type,
+          farmer_name: farm.farmer_name,
+          farmer_phone: farm.farmer_phone,
+          message: msg,
+          nearbyFarms,
         };
       }
     }
@@ -88,6 +108,9 @@ async function runAnalysis(req, res) {
       is_fallback: result.is_fallback,
       engine_status: result.engine_status,
       engine_mode: result.engine_mode,
+      sourceFarm: farm,
+      impactRadiusKm: 2,
+      nearbyFarms,
       alert,
     });
   } catch (err) {

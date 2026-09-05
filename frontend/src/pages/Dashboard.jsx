@@ -55,7 +55,7 @@ export default function Dashboard() {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50/70">
+    <div className="min-h-screen bg-[#F7F7F2]">
       <AppHeader farmer={farmer} />
 
       {isJudgeDemo && (
@@ -74,18 +74,18 @@ export default function Dashboard() {
           <div className="bg-white rounded-2xl border border-gray-200/80 p-5 shadow-xs">
             <div className="flex items-center justify-between text-xs text-gray-500 font-bold uppercase tracking-wider mb-2">
               <span>{t('registeredHoldings')}</span>
-              <Sprout className="w-4 h-4 text-emerald-600" />
+              <Sprout className="w-4 h-4 text-[#14532D]" />
             </div>
-            <p className="text-2xl font-black text-gray-900 font-mono">{farms.length}</p>
+            <p className="text-2xl font-black text-[#17211B] font-mono">{farms.length}</p>
             <p className="text-[11px] text-gray-400 mt-1 font-medium">{t('cadastralPlotsLinked')}</p>
           </div>
 
           <div className="bg-white rounded-2xl border border-gray-200/80 p-5 shadow-xs">
             <div className="flex items-center justify-between text-xs text-gray-500 font-bold uppercase tracking-wider mb-2">
               <span>{t('totalAreaMonitored')}</span>
-              <Layers className="w-4 h-4 text-emerald-600" />
+              <Layers className="w-4 h-4 text-[#14532D]" />
             </div>
-            <p className="text-2xl font-black text-gray-900 font-mono">
+            <p className="text-2xl font-black text-[#17211B] font-mono">
               {totalHectares.toFixed(2)} <span className="text-sm font-normal text-gray-500">ha</span>
             </p>
             <p className="text-[11px] text-gray-400 mt-1 font-medium">{t('postgisArea')}</p>
@@ -94,13 +94,13 @@ export default function Dashboard() {
           <div className="bg-white rounded-2xl border border-gray-200/80 p-5 shadow-xs">
             <div className="flex items-center justify-between text-xs text-gray-500 font-bold uppercase tracking-wider mb-2">
               <span>{t('communityAlerts')}</span>
-              <Bell className="w-4 h-4 text-amber-500" />
+              <Bell className="w-4 h-4 text-[#E88A1A]" />
             </div>
             <div className="flex items-baseline gap-2">
-              <span className="text-2xl font-black text-amber-700 font-mono">Active</span>
+              <span className="text-2xl font-black text-[#E88A1A] font-mono">2 km</span>
               <button
                 onClick={() => navigate('/alerts')}
-                className="text-xs text-emerald-700 font-bold hover:underline"
+                className="text-xs text-[#14532D] font-bold hover:underline"
               >
                 {t('viewMap')}
               </button>
@@ -111,10 +111,10 @@ export default function Dashboard() {
           <div className="bg-white rounded-2xl border border-gray-200/80 p-5 shadow-xs">
             <div className="flex items-center justify-between text-xs text-gray-500 font-bold uppercase tracking-wider mb-2">
               <span>{t('telemetryEngine')}</span>
-              <Activity className="w-4 h-4 text-emerald-600" />
+              <Activity className="w-4 h-4 text-[#14532D]" />
             </div>
             <p className="text-sm font-bold text-gray-900 flex items-center gap-1.5 mt-1">
-              <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+              <span className="w-2 h-2 rounded-full bg-[#2F7D32]"></span>
               Copernicus S-2 L2A
             </p>
             <p className="text-[11px] text-gray-400 mt-1 font-medium">{t('opticalResolution')}</p>
@@ -143,7 +143,7 @@ export default function Dashboard() {
             </div>
             <button
               onClick={() => navigate('/add-farm')}
-              className="bg-emerald-800 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-emerald-900 transition flex items-center gap-2 shadow-xs"
+              className="bg-[#14532D] text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-[#0f3d20] transition flex items-center gap-2 shadow-xs"
             >
               <Plus className="w-4 h-4" />
               <span>{t('addNewFarm')}</span>
@@ -154,7 +154,7 @@ export default function Dashboard() {
         {/* Farms Grid / Empty State */}
         {loading ? (
           <div className="bg-white rounded-2xl border border-gray-200 p-12 text-center text-sm text-gray-500">
-            <div className="animate-spin w-6 h-6 border-2 border-emerald-600 border-t-transparent rounded-full mx-auto mb-2"></div>
+            <div className="animate-spin w-6 h-6 border-2 border-[#14532D] border-t-transparent rounded-full mx-auto mb-2"></div>
             Loading registered cadastral parcels from PostGIS...
           </div>
         ) : farms.length === 0 ? (
@@ -168,7 +168,7 @@ export default function Dashboard() {
             </p>
             <button
               onClick={() => navigate('/add-farm')}
-              className="bg-emerald-800 text-white px-5 py-2.5 rounded-xl text-xs font-bold hover:bg-emerald-900 transition inline-flex items-center gap-2"
+              className="bg-[#14532D] text-white px-5 py-2.5 rounded-xl text-xs font-bold hover:bg-[#0f3d20] transition inline-flex items-center gap-2"
             >
               <Plus className="w-4 h-4" />
               {t('addNewFarm')}
@@ -184,8 +184,8 @@ export default function Dashboard() {
                   onClick={() => navigate(`/farm/${farm.id}${isJudgeDemo ? '?demo=judge' : ''}`)}
                   className={`bg-white rounded-2xl border p-5 cursor-pointer transition-all duration-200 group flex flex-col justify-between ${
                     isTargetDemoFarm
-                      ? 'border-emerald-500 ring-2 ring-emerald-500/60 shadow-lg bg-emerald-50/10'
-                      : 'border-gray-200/80 hover:border-emerald-600/60 hover:shadow-md'
+                      ? 'border-[#14532D] ring-2 ring-[#14532D]/40 shadow-lg bg-emerald-50/10'
+                      : 'border-gray-200/80 hover:border-[#14532D]/60 hover:shadow-md'
                   }`}
                 >
                   <div>
@@ -199,37 +199,46 @@ export default function Dashboard() {
                       </div>
                     )}
                     <div className="flex items-start justify-between mb-3">
-                    <span className="text-xs bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1 font-mono">
-                      <ShieldCheck className="w-3 h-3 text-emerald-600" />
-                      Plot #{farm.id}
-                    </span>
-                    <span className="text-xs text-gray-400 font-mono font-medium">
-                      {farm.area_hectares} ha
-                    </span>
+                      <span className="text-xs bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1 font-mono">
+                        <ShieldCheck className="w-3 h-3 text-emerald-600" />
+                        Plot #{farm.id}
+                      </span>
+                      <span className="text-xs text-gray-400 font-mono font-medium">
+                        {farm.area_hectares} ha
+                      </span>
+                    </div>
+
+                    <h3 className="text-lg font-bold text-gray-900 group-hover:text-[#14532D] transition">
+                      {farm.crop_type || 'Mixed Agricultural Crop'}
+                    </h3>
+
+                    <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                      <MapPin className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                      <span>Cadastral Boundary Sealed (PostGIS 4326)</span>
+                    </p>
                   </div>
 
-                  <h3 className="text-lg font-bold text-gray-900 group-hover:text-emerald-800 transition">
-                    {farm.crop_type || 'Mixed Agricultural Crop'}
-                  </h3>
+                  <div className="mt-5 pt-3.5 border-t border-gray-100 flex items-center justify-between text-xs">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/alerts?farm_id=${farm.id}`);
+                      }}
+                      className="text-gray-500 hover:text-[#E88A1A] font-medium flex items-center gap-1 transition"
+                      title="View 2 km Village Alert Cluster for this holding"
+                    >
+                      <Bell className="w-3.5 h-3.5 text-[#E88A1A]" />
+                      <span>2 km Alerts</span>
+                    </button>
 
-                  <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
-                    <MapPin className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-                    <span>Cadastral Boundary Sealed (PostGIS 4326)</span>
-                  </p>
+                    <span className="text-[#14532D] font-bold flex items-center gap-1 group-hover:translate-x-1 transition-transform">
+                      <span>{t('scanField')}</span>
+                      <ChevronRight className="w-3.5 h-3.5" />
+                    </span>
+                  </div>
                 </div>
-
-                <div className="mt-5 pt-3.5 border-t border-gray-100 flex items-center justify-between text-xs">
-                  <span className="text-gray-400 text-[11px] font-medium">
-                    {t('readyForAudit')}
-                  </span>
-                  <span className="text-emerald-800 font-bold flex items-center gap-1 group-hover:translate-x-1 transition-transform">
-                    <span>{t('scanField')}</span>
-                    <ChevronRight className="w-3.5 h-3.5" />
-                  </span>
-                </div>
-              </div>
-            );
-          })}
+              );
+            })}
           </div>
         )}
       </main>

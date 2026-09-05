@@ -41,6 +41,7 @@ export default function FarmDetail() {
   const [error, setError] = useState('');
   const [generatingPDF, setGeneratingPDF] = useState(false);
   const [proofPacket, setProofPacket] = useState(null);
+  const [nearbyFarms, setNearbyFarms] = useState([]);
 
   // Judge Demo Mode state
   const isJudgeDemo = localStorage.getItem('judgeDemo') === 'true' || location.search.includes('demo=judge');
@@ -54,6 +55,12 @@ export default function FarmDetail() {
   const packetRef = useRef(null);
 
   useEffect(() => {
+    setFarm(null);
+    setResult(null);
+    setProofPacket(null);
+    setError('');
+    setSelectedScenario(null);
+    setNearbyFarms([]);
     loadFarm();
   }, [id]);
 
@@ -61,6 +68,12 @@ export default function FarmDetail() {
     try {
       const res = await apiClient.get(`/farms/${id}`);
       setFarm(res.data.farm);
+      try {
+        const nearbyRes = await apiClient.get(`/farms/${id}/nearby?radius_km=2`);
+        setNearbyFarms(nearbyRes.data.nearbyFarms || []);
+      } catch (err) {
+        console.warn('Nearby farms fetch skipped:', err.message);
+      }
     } catch (err) {
       console.error(err);
     }
@@ -77,6 +90,9 @@ export default function FarmDetail() {
       if (demoScenario) payload.demo_scenario = demoScenario;
       const res = await apiClient.post('/analyses', payload);
       setResult(res.data);
+      if (res.data.nearbyFarms) {
+        setNearbyFarms(res.data.nearbyFarms);
+      }
       if (isJudgeDemo) {
         setDemoStep(3); // Advanced to Diagnosis
         setTimeout(() => {
@@ -198,7 +214,7 @@ export default function FarmDetail() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50/70">
+    <div className="min-h-screen bg-[#F7F7F2]">
       <AppHeader farmer={farmer} />
 
       {isJudgeDemo && (
@@ -260,7 +276,7 @@ export default function FarmDetail() {
             <button
               onClick={() => handleAnalyze()}
               disabled={analyzing}
-              className="bg-emerald-800 text-white px-6 py-3 rounded-xl font-bold hover:bg-emerald-900 active:scale-[0.99] transition disabled:opacity-50 flex items-center gap-2 shadow-xs text-sm"
+              className="bg-[#14532D] text-white px-6 py-3 rounded-xl font-bold hover:bg-[#0f3d20] active:scale-[0.99] transition disabled:opacity-50 flex items-center gap-2 shadow-xs text-sm"
             >
               <Zap className="w-4 h-4 text-emerald-300" />
               <span>{analyzing ? t('acquiringTelemetry') : t('scanSelectedField')}</span>
@@ -434,6 +450,7 @@ export default function FarmDetail() {
               <VillageAlertMap
                 alert={result.alert}
                 sourceFarm={farm}
+                nearbyFarms={result.nearbyFarms || nearbyFarms}
                 radiusKm={2}
                 scenarioType={result.analysis.stress_type || 'DROUGHT'}
               />
@@ -458,7 +475,7 @@ export default function FarmDetail() {
                   <button
                     onClick={handleGeneratePDF}
                     disabled={generatingPDF}
-                    className="bg-amber-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-amber-700 active:scale-[0.99] transition disabled:opacity-50 flex items-center gap-2 shadow-xs shrink-0 text-xs"
+                    className="bg-[#E88A1A] text-white px-6 py-3 rounded-xl font-bold hover:bg-[#c97514] active:scale-[0.99] transition disabled:opacity-50 flex items-center gap-2 shadow-xs shrink-0 text-xs"
                   >
                     <FileText className="w-4 h-4" />
                     <span>{generatingPDF ? t('sealingPdf') : t('generateProofPacketBtn')}</span>
@@ -468,12 +485,12 @@ export default function FarmDetail() {
                 <div className="bg-white rounded-2xl border border-emerald-300 p-6 shadow-xs space-y-4">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-emerald-700 rounded-xl flex items-center justify-center text-white shadow-xs">
+                      <div className="w-10 h-10 bg-[#14532D] rounded-xl flex items-center justify-center text-white shadow-xs">
                         <FileCheck className="w-5 h-5 text-emerald-200" />
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
-                          <span className="text-xs bg-emerald-100 text-emerald-800 border border-emerald-200 px-2.5 py-0.5 rounded-full font-bold">
+                          <span className="text-xs bg-emerald-100 text-[#14532D] border border-emerald-200 px-2.5 py-0.5 rounded-full font-bold">
                             {t('evidencePacketSealed')}
                           </span>
                           <span className="text-xs text-gray-400 font-mono">PKT-#{proofPacket.id}</span>
@@ -489,13 +506,23 @@ export default function FarmDetail() {
                       </div>
                     </div>
 
-                    <button
-                      onClick={downloadPDF}
-                      className="bg-emerald-800 text-white px-5 py-2.5 rounded-xl font-bold hover:bg-emerald-900 active:scale-[0.99] transition flex items-center gap-2 shadow-xs text-xs shrink-0"
-                    >
-                      <Download className="w-4 h-4" />
-                      <span>{t('downloadSignedPdf')}</span>
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => window.open(`/verify?id=${proofPacket.id}&hash=${proofPacket.evidence_hash}`, '_blank')}
+                        className="bg-white border border-gray-300 text-gray-800 px-4 py-2.5 rounded-xl font-bold hover:bg-gray-50 active:scale-[0.99] transition flex items-center gap-1.5 shadow-xs text-xs shrink-0"
+                      >
+                        <ShieldCheck className="w-4 h-4 text-[#14532D]" />
+                        <span>Verify QR Link</span>
+                      </button>
+
+                      <button
+                        onClick={downloadPDF}
+                        className="bg-[#14532D] text-white px-5 py-2.5 rounded-xl font-bold hover:bg-[#0f3d20] active:scale-[0.99] transition flex items-center gap-2 shadow-xs text-xs shrink-0"
+                      >
+                        <Download className="w-4 h-4" />
+                        <span>{t('downloadSignedPdf')}</span>
+                      </button>
+                    </div>
                   </div>
 
                   <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2">
@@ -507,7 +534,7 @@ export default function FarmDetail() {
                         {proofPacket.evidence_hash}
                       </code>
                     </div>
-                    <div className="shrink-0 flex items-center gap-1 text-[11px] text-emerald-800 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-lg font-mono">
+                    <div className="shrink-0 flex items-center gap-1 text-[11px] text-[#14532D] bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-lg font-mono">
                       <QrCode className="w-3.5 h-3.5 text-emerald-600" />
                       <span>{t('qrSealEmbedded')}</span>
                     </div>

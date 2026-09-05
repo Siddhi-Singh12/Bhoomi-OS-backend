@@ -199,7 +199,8 @@ async function evaluateStress(boundaryGeoJSON, demoScenario = null) {
   try {
     if (demoScenario) {
       const response = await axios.get(`${baseUrl}/demo/${demoScenario}`, {
-        timeout: 5000,
+        timeout: 4000,
+        signal: AbortSignal.timeout(4000),
       });
       data = response.data;
     } else {
@@ -214,7 +215,8 @@ async function evaluateStress(boundaryGeoJSON, demoScenario = null) {
       };
 
       const response = await axios.post(`${baseUrl}/analyze-stress`, requestBody, {
-        timeout: 7000,
+        timeout: 4500,
+        signal: AbortSignal.timeout(4500),
       });
       data = response.data;
     }

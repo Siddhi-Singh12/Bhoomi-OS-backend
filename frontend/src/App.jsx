@@ -4,6 +4,7 @@ import Dashboard from './pages/Dashboard';
 import AddFarm from './pages/AddFarm';
 import FarmDetail from './pages/FarmDetail';
 import Alerts from './pages/Alerts';
+import VerifyPacket from './pages/VerifyPacket';
 import { LanguageProvider } from './context/LanguageContext';
 
 export default function App() {
@@ -16,6 +17,8 @@ export default function App() {
           <Route path="/add-farm" element={<AddFarm />} />
           <Route path="/farm/:id" element={<FarmDetail />} />
           <Route path="/alerts" element={<Alerts />} />
+          <Route path="/verify" element={<VerifyPacket />} />
+          <Route path="/verify/:id" element={<VerifyPacket />} />
         </Routes>
       </BrowserRouter>
     </LanguageProvider>

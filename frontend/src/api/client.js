@@ -3,12 +3,13 @@ import axios from 'axios';
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ||
   import.meta.env.VITE_API_URL ||
-  (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-    ? 'http://localhost:5001/api'
-    : 'https://bhoomi-os-backend.onrender.com/api');
+  (typeof window !== 'undefined'
+    ? `${window.location.protocol}//${window.location.hostname || 'localhost'}:5001/api`
+    : 'http://localhost:5001/api');
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
+  timeout: 15000,
   headers: { 'Content-Type': 'application/json' },
 });
 

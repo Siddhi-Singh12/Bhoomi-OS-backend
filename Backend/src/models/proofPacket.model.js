@@ -3,7 +3,7 @@ const { generateProofPacketPDF, computeEvidenceHash } = require('../services/pdf
 const { saveProofPacketPDF } = require('../services/storage.service');
 const logger = require('../utils/logger');
 
-async function createProofPacket({ analysis_id, claim_loss_percent }) {
+async function createProofPacket({ analysis_id, claim_loss_percent, frontend_url }) {
   let fullData = null;
 
   // 1. Fetch complete analysis + farm + farmer metadata
@@ -89,6 +89,16 @@ async function createProofPacket({ analysis_id, claim_loss_percent }) {
   fullData.claim_loss_percent = lossPercent;
   fullData.generated_at = new Date().toISOString();
 
+  // Fetch real spatial cluster neighbors within 2 km for dynamic community impact
+  let nearbyFarms = [];
+  try {
+    const { getNearbyFarmsDetails } = require('./alert.model');
+    nearbyFarms = await getNearbyFarmsDetails(fullData.farm_id, 2);
+  } catch (nearbyErr) {
+    nearbyFarms = [];
+  }
+  fullData.nearbyFarms = nearbyFarms;
+
   // Compute transparent AI risk score
   const { calculateRiskScore } = require('../services/rulesEngine.service');
   const risk = calculateRiskScore(
@@ -106,14 +116,12 @@ async function createProofPacket({ analysis_id, claim_loss_percent }) {
   fullData.evidence_hash = evidenceHash;
 
   // 3. Generate PDF Buffer & Save to Storage
+  fullData.frontend_url = frontend_url;
   const filename = `proof-packet-analysis-${analysis_id}-${Date.now()}.pdf`;
   const pdfBuffer = await generateProofPacketPDF(fullData);
   const pdfUrl = await saveProofPacketPDF(filename, pdfBuffer);
 
   // 4. Save to Database
-  // (No more silent fake-record fallback here either — if the insert
-  // fails, that's a real error the caller should see, not a made-up
-  // in-memory record that looks saved but isn't.)
   const insertQuery = `
     INSERT INTO proof_packets (analysis_id, pdf_url, evidence_hash, claim_crop_type, claim_loss_percent, claim_area_hectares)
     VALUES ($1, $2, $3, $4, $5, $6)
@@ -141,6 +149,7 @@ async function createProofPacket({ analysis_id, claim_loss_percent }) {
     agristack_id: fullData.agristack_id,
     stress_type: fullData.stress_type,
     confidence: fullData.confidence,
+    nearbyFarms,
     filename,
   };
 }
@@ -157,6 +166,12 @@ async function getProofPacketById(id) {
       a.stress_type,
       a.confidence,
       a.rule_triggered,
+      a.analyzed_at,
+      f.crop_type,
+      f.area_hectares,
+      ROUND(ST_Y(ST_Centroid(f.boundary))::numeric, 6) AS lat,
+      ROUND(ST_X(ST_Centroid(f.boundary))::numeric, 6) AS lng,
+      ST_AsGeoJSON(f.boundary) AS boundary,
       fm.id AS farmer_id,
       fm.name AS farmer_name,
       fm.phone AS farmer_phone,
@@ -168,7 +183,95 @@ async function getProofPacketById(id) {
     WHERE p.id = $1;
   `;
   const result = await pool.query(query, [id]);
-  return result.rows[0] || null;
+  if (result.rows.length === 0) return null;
+  const row = result.rows[0];
+
+  const { calculateRiskScore } = require('../services/rulesEngine.service');
+  const risk = calculateRiskScore(
+    row.stress_type,
+    row.confidence,
+    row.ndvi,
+    row.rainfall_mm,
+    row.temperature_c
+  );
+
+  const shortHash = (row.evidence_hash || '').replace(/^0x/i, '').substring(0, 8).toUpperCase();
+  return {
+    ...row,
+    lat: row.lat != null ? parseFloat(row.lat) : null,
+    lng: row.lng != null ? parseFloat(row.lng) : null,
+    risk_score: risk.risk_score,
+    risk_level: risk.risk_level,
+    verification_id: `BHOOMI-VERIFY-2026-${shortHash}`,
+  };
+}
+
+async function getProofPacketByHashOrId(identifier) {
+  if (!identifier) return null;
+  const cleanId = String(identifier).trim();
+
+  let query = `
+    SELECT 
+      p.*,
+      a.farm_id,
+      a.ndvi,
+      a.ndwi,
+      a.rainfall_mm,
+      a.temperature_c,
+      a.stress_type,
+      a.confidence,
+      a.rule_triggered,
+      a.analyzed_at,
+      f.crop_type,
+      f.area_hectares,
+      ROUND(ST_Y(ST_Centroid(f.boundary))::numeric, 6) AS lat,
+      ROUND(ST_X(ST_Centroid(f.boundary))::numeric, 6) AS lng,
+      ST_AsGeoJSON(f.boundary) AS boundary,
+      fm.id AS farmer_id,
+      fm.name AS farmer_name,
+      fm.phone AS farmer_phone,
+      fm.agristack_id
+    FROM proof_packets p
+    JOIN analyses a ON a.id = p.analysis_id
+    JOIN farms f ON f.id = a.farm_id
+    JOIN farmers fm ON fm.id = f.farmer_id
+  `;
+
+  let values = [];
+  if (/^\d+$/.test(cleanId)) {
+    query += ` WHERE p.id = $1 OR p.analysis_id = $1 LIMIT 1;`;
+    values = [parseInt(cleanId, 10)];
+  } else {
+    const raw = cleanId.replace(/bhoomi-verify-2026-/i, '').replace(/^0x/i, '');
+    query += ` WHERE p.evidence_hash ILIKE $1 OR p.evidence_hash ILIKE $2 LIMIT 1;`;
+    values = [`%${raw}%`, `0x%${raw}%`];
+  }
+
+  const result = await pool.query(query, values);
+  if (result.rows.length === 0) return null;
+  const row = result.rows[0];
+
+  const { calculateRiskScore } = require('../services/rulesEngine.service');
+  const risk = calculateRiskScore(
+    row.stress_type,
+    row.confidence,
+    row.ndvi,
+    row.rainfall_mm,
+    row.temperature_c
+  );
+
+  const shortHash = (row.evidence_hash || '').replace(/^0x/i, '').substring(0, 8).toUpperCase();
+  const verificationId = `BHOOMI-VERIFY-2026-${shortHash}`;
+
+  return {
+    ...row,
+    lat: row.lat != null ? parseFloat(row.lat) : null,
+    lng: row.lng != null ? parseFloat(row.lng) : null,
+    risk_score: risk.risk_score,
+    risk_level: risk.risk_level,
+    verification_id: verificationId,
+    verified: true,
+  };
 }
 
 async function getAllProofPackets() {
@@ -191,5 +294,6 @@ async function getAllProofPackets() {
 module.exports = {
   createProofPacket,
   getProofPacketById,
+  getProofPacketByHashOrId,
   getAllProofPackets,
 };
