@@ -7,6 +7,7 @@ import AIRiskScoreCard from '../components/AIRiskScoreCard';
 import SatelliteTimeline from '../components/SatelliteTimeline';
 import VillageAlertMap from '../components/VillageAlertMap';
 import JudgeDemoBar from '../components/JudgeDemoBar';
+import { useLanguage } from '../context/LanguageContext';
 import {
   Zap,
   Sparkles,
@@ -31,6 +32,7 @@ export default function FarmDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const { t } = useLanguage();
   const farmer = JSON.parse(localStorage.getItem('farmer') || '{}');
   const [farm, setFarm] = useState(null);
   const [analyzing, setAnalyzing] = useState(false);
@@ -188,11 +190,11 @@ export default function FarmDetail() {
   if (!farm) return <div className="p-8 text-gray-500">Loading farm...</div>;
 
   const nextLabels = {
-    2: 'Execute Multi-Spectral Audit (Drought)',
-    3: 'Audit Satellite Orbit Passes',
-    4: 'Compute PostGIS Cluster',
-    5: proofPacket ? 'Inspect Sealed Evidence' : 'Compile Cryptographic Proof Packet',
-    6: 'Download Signed Legal PDF',
+    2: t('pipelineNext_3'),
+    3: t('pipelineNext_4'),
+    4: t('pipelineNext_5'),
+    5: proofPacket ? t('inspectSealedEvidence') : t('compileProofPacket'),
+    6: t('pipelineNext_6'),
   };
 
   return (
@@ -203,7 +205,7 @@ export default function FarmDetail() {
         <JudgeDemoBar
           currentStep={demoStep}
           totalSteps={6}
-          nextLabel={nextLabels[demoStep] || 'Next Step'}
+          nextLabel={nextLabels[demoStep] || t('nextStage')}
           onNext={handleDemoNext}
           onExit={handleExitDemo}
           isActionLoading={analyzing || generatingPDF}
@@ -218,7 +220,7 @@ export default function FarmDetail() {
           className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-500 hover:text-gray-900 transition"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
-          Back to Dashboard
+          {t('backToDashboard')}
         </button>
 
         {/* Hero banner */}
@@ -227,12 +229,12 @@ export default function FarmDetail() {
             {result?.is_fallback || result?.analysis?.is_fallback ? (
               <span className="text-xs bg-amber-50 text-amber-900 border border-amber-300 px-3 py-1 rounded-full font-semibold flex items-center gap-1.5 shadow-xs">
                 <span className="w-2 h-2 bg-amber-500 rounded-full animate-pulse"></span>
-                Diagnostic Engine: Local Verified Simulation
+                {t('diagnosticEngineSimulation')}
               </span>
             ) : (
               <span className="text-xs bg-emerald-50 text-emerald-800 border border-emerald-200 px-3 py-1 rounded-full font-semibold flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 bg-emerald-600 rounded-full animate-pulse"></span>
-                Live Sentinel-2 Diagnostic Engine
+                {t('diagnosticEngineLive')}
               </span>
             )}
             <span className="text-xs bg-gray-100 text-gray-700 px-2.5 py-1 rounded-full font-mono">
@@ -240,7 +242,7 @@ export default function FarmDetail() {
             </span>
             {(result?.is_fallback || result?.analysis?.is_fallback) && (
               <span className="text-xs bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full font-medium">
-                Offline Mode Active · 100% Deterministic
+                {t('offlineModeActive')}
               </span>
             )}
           </div>
@@ -248,10 +250,10 @@ export default function FarmDetail() {
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
               <h1 className="text-2xl font-black text-gray-950 tracking-tight">
-                Crop Stress Diagnostic & Proof Packet Engine
+                {t('cropStressDiagnosticTitle')}
               </h1>
               <p className="text-xs text-gray-500 mt-1 font-medium">
-                {farm.crop_type} — Cadastral Plot #{farm.id} · {farm.area_hectares} hectares declared
+                {farm.crop_type} — Cadastral Plot #{farm.id} · {farm.area_hectares} {t('hectaresDeclared')}
               </p>
             </div>
 
@@ -261,7 +263,7 @@ export default function FarmDetail() {
               className="bg-emerald-800 text-white px-6 py-3 rounded-xl font-bold hover:bg-emerald-900 active:scale-[0.99] transition disabled:opacity-50 flex items-center gap-2 shadow-xs text-sm"
             >
               <Zap className="w-4 h-4 text-emerald-300" />
-              <span>{analyzing ? 'Acquiring Telemetry...' : 'Scan Selected Field'}</span>
+              <span>{analyzing ? t('acquiringTelemetry') : t('scanSelectedField')}</span>
             </button>
           </div>
         </div>
@@ -272,10 +274,10 @@ export default function FarmDetail() {
             <Sparkles className="w-4 h-4 text-emerald-600 shrink-0" />
             <div>
               <p className="text-xs font-bold text-gray-900 font-mono uppercase tracking-wide">
-                Certified PMFBY Calamity Benchmarks
+                {t('benchmarksTitle')}
               </p>
               <p className="text-[11px] text-gray-500">
-                Trigger verified agronomic scenarios to benchmark multi-spectral rules engine outputs.
+                {t('benchmarksSubtext')}
               </p>
             </div>
           </div>
@@ -291,7 +293,7 @@ export default function FarmDetail() {
               }`}
             >
               <AlertTriangle className="w-3.5 h-3.5" />
-              Simulate: Drought Calamity (R1)
+              {t('simulateDrought')}
             </button>
             <button
               onClick={() => handleAnalyze('example_pest_scenario')}
@@ -303,7 +305,7 @@ export default function FarmDetail() {
               }`}
             >
               <AlertTriangle className="w-3.5 h-3.5" />
-              Simulate: Pest Anomaly (R2)
+              {t('simulatePest')}
             </button>
             <button
               onClick={() => handleAnalyze('punjab_farm')}
@@ -315,7 +317,7 @@ export default function FarmDetail() {
               }`}
             >
               <CheckCircle2 className="w-3.5 h-3.5" />
-              Benchmark: Normal Health (R0)
+              {t('benchmarkNormal')}
             </button>
           </div>
         </div>
@@ -352,7 +354,7 @@ export default function FarmDetail() {
             {/* TELEMETRY GAUGES */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <MetricGauge
-                label="Canopy NDVI (Vegetation Index)"
+                label={t('ndviGaugeLabel')}
                 icon={<Leaf className="w-4 h-4 text-emerald-600" />}
                 value={parseFloat(result.analysis.ndvi)}
                 min={-0.2}
@@ -363,7 +365,7 @@ export default function FarmDetail() {
                 gradientClass="bg-gradient-to-r from-red-500 via-amber-400 to-emerald-500"
               />
               <MetricGauge
-                label="Canopy NDWI (Moisture Index)"
+                label={t('ndwiGaugeLabel')}
                 icon={<Droplets className="w-4 h-4 text-blue-600" />}
                 value={parseFloat(result.analysis.ndwi)}
                 min={-0.2}
@@ -379,7 +381,7 @@ export default function FarmDetail() {
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="bg-white rounded-2xl border border-gray-200/80 p-4 shadow-xs">
                 <div className="flex items-center justify-between text-xs text-gray-500 font-bold uppercase mb-1">
-                  <span>7d Cumulative Rain</span>
+                  <span>{t('rain7dLabel')}</span>
                   <CloudRain className="w-4 h-4 text-blue-500" />
                 </div>
                 <p className="text-xl font-black text-gray-900 font-mono">
@@ -390,7 +392,7 @@ export default function FarmDetail() {
 
               <div className="bg-white rounded-2xl border border-gray-200/80 p-4 shadow-xs">
                 <div className="flex items-center justify-between text-xs text-gray-500 font-bold uppercase mb-1">
-                  <span>Avg Max Temperature</span>
+                  <span>{t('tempAvgLabel')}</span>
                   <Thermometer className="w-4 h-4 text-orange-500" />
                 </div>
                 <p className="text-xl font-black text-gray-900 font-mono">
@@ -401,7 +403,7 @@ export default function FarmDetail() {
 
               <div className="bg-white rounded-2xl border border-gray-200/80 p-4 shadow-xs">
                 <div className="flex items-center justify-between text-xs text-gray-500 font-bold uppercase mb-1">
-                  <span>Triggered Rule ID</span>
+                  <span>{t('triggeredRuleLabel')}</span>
                   <ShieldCheck className="w-4 h-4 text-emerald-600" />
                 </div>
                 <p className="text-sm font-black text-gray-900 font-mono truncate">
@@ -412,7 +414,7 @@ export default function FarmDetail() {
 
               <div className="bg-white rounded-2xl border border-gray-200/80 p-4 shadow-xs">
                 <div className="flex items-center justify-between text-xs text-gray-500 font-bold uppercase mb-1">
-                  <span>Sensor Verification</span>
+                  <span>{t('sensorVerificationLabel')}</span>
                   <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                 </div>
                 <p className="text-xl font-black text-gray-900 font-mono">
@@ -444,13 +446,13 @@ export default function FarmDetail() {
                   <div>
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-xs bg-amber-50 text-amber-800 border border-amber-200 px-2.5 py-0.5 rounded-full font-semibold">
-                        PMFBY Claim Ready
+                        {t('pmfbyClaimReady')}
                       </span>
-                      <span className="text-[11px] text-gray-400 font-mono">SHA-256 Tamper-Evident</span>
+                      <span className="text-[11px] text-gray-400 font-mono">{t('tamperEvident')}</span>
                     </div>
-                    <h3 className="text-lg font-bold text-gray-900">Compile Cryptographic Proof Packet</h3>
+                    <h3 className="text-lg font-bold text-gray-900">{t('compileProofPacket')}</h3>
                     <p className="text-xs text-gray-500 mt-0.5 max-w-xl leading-relaxed">
-                      Binds Sentinel-2 multi-spectral NDVI telemetry, meteorological drought index, PostGIS cadastral boundary, and community impact into a verified PDF sealed with SHA-256 integrity hash and QR verification matrix.
+                      {t('proofPacketDescription')}
                     </p>
                   </div>
                   <button
@@ -459,7 +461,7 @@ export default function FarmDetail() {
                     className="bg-amber-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-amber-700 active:scale-[0.99] transition disabled:opacity-50 flex items-center gap-2 shadow-xs shrink-0 text-xs"
                   >
                     <FileText className="w-4 h-4" />
-                    <span>{generatingPDF ? 'Sealing PDF Evidence...' : 'Generate Proof Packet PDF'}</span>
+                    <span>{generatingPDF ? t('sealingPdf') : t('generateProofPacketBtn')}</span>
                   </button>
                 </div>
               ) : (
@@ -472,7 +474,7 @@ export default function FarmDetail() {
                       <div>
                         <div className="flex items-center gap-2">
                           <span className="text-xs bg-emerald-100 text-emerald-800 border border-emerald-200 px-2.5 py-0.5 rounded-full font-bold">
-                            EVIDENCE PACKET SEALED
+                            {t('evidencePacketSealed')}
                           </span>
                           <span className="text-xs text-gray-400 font-mono">PKT-#{proofPacket.id}</span>
                           {proofPacket.verification_id && (
@@ -482,7 +484,7 @@ export default function FarmDetail() {
                           )}
                         </div>
                         <h3 className="text-base font-bold text-gray-900 mt-0.5">
-                          PMFBY Calamity Evidence Ready for Insurance Adjudication
+                          {t('calamityEvidenceReady')}
                         </h3>
                       </div>
                     </div>
@@ -492,14 +494,14 @@ export default function FarmDetail() {
                       className="bg-emerald-800 text-white px-5 py-2.5 rounded-xl font-bold hover:bg-emerald-900 active:scale-[0.99] transition flex items-center gap-2 shadow-xs text-xs shrink-0"
                     >
                       <Download className="w-4 h-4" />
-                      <span>Download Signed PDF</span>
+                      <span>{t('downloadSignedPdf')}</span>
                     </button>
                   </div>
 
                   <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <div>
                       <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block mb-1">
-                        SHA-256 Tamper-Evident Evidence Hash
+                        {t('sha256EvidenceHash')}
                       </span>
                       <code className="text-xs font-mono font-bold text-emerald-900 break-all select-all">
                         {proofPacket.evidence_hash}
@@ -507,7 +509,7 @@ export default function FarmDetail() {
                     </div>
                     <div className="shrink-0 flex items-center gap-1 text-[11px] text-emerald-800 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-lg font-mono">
                       <QrCode className="w-3.5 h-3.5 text-emerald-600" />
-                      <span>QR Seal Embedded</span>
+                      <span>{t('qrSealEmbedded')}</span>
                     </div>
                   </div>
                 </div>
@@ -521,9 +523,9 @@ export default function FarmDetail() {
               <Zap className="w-8 h-8" />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-gray-900 mb-1">Ready for Sentinel-2 Telemetry Acquisition</h3>
+              <h3 className="text-lg font-bold text-gray-900 mb-1">{t('cropStressPrompt')}</h3>
               <p className="text-xs text-gray-500 max-w-md mx-auto leading-relaxed">
-                Click <strong>"Scan Selected Field"</strong> or choose a <strong>Hackathon Demo Scenario</strong> above to cross-reference multi-spectral optical reflectance with 7-day precipitation telemetry.
+                {t('cropStressPromptSub')}
               </p>
             </div>
           </div>

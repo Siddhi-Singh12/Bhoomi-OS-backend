@@ -3,11 +3,13 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import apiClient from '../api/client';
 import AppHeader from '../components/AppHeader';
 import JudgeDemoBar from '../components/JudgeDemoBar';
+import { useLanguage } from '../context/LanguageContext';
 import { Plus, ScanLine, MapPin, Bell, Layers, ShieldCheck, ChevronRight, Activity, Sprout, Search, Zap } from 'lucide-react';
 
 export default function Dashboard() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { t } = useLanguage();
   const farmer = JSON.parse(localStorage.getItem('farmer') || '{}');
   const [farms, setFarms] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -60,7 +62,7 @@ export default function Dashboard() {
         <JudgeDemoBar
           currentStep={2}
           totalSteps={6}
-          nextLabel="Verify Cadastral Parcel #1"
+          nextLabel={t('pipelineNext_2')}
           onNext={handleDemoNext}
           onExit={handleExitDemo}
         />
@@ -71,27 +73,27 @@ export default function Dashboard() {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="bg-white rounded-2xl border border-gray-200/80 p-5 shadow-xs">
             <div className="flex items-center justify-between text-xs text-gray-500 font-bold uppercase tracking-wider mb-2">
-              <span>Registered Holdings</span>
+              <span>{t('registeredHoldings')}</span>
               <Sprout className="w-4 h-4 text-emerald-600" />
             </div>
             <p className="text-2xl font-black text-gray-900 font-mono">{farms.length}</p>
-            <p className="text-[11px] text-gray-400 mt-1 font-medium">Cadastral plots linked</p>
+            <p className="text-[11px] text-gray-400 mt-1 font-medium">{t('cadastralPlotsLinked')}</p>
           </div>
 
           <div className="bg-white rounded-2xl border border-gray-200/80 p-5 shadow-xs">
             <div className="flex items-center justify-between text-xs text-gray-500 font-bold uppercase tracking-wider mb-2">
-              <span>Total Area Monitored</span>
+              <span>{t('totalAreaMonitored')}</span>
               <Layers className="w-4 h-4 text-emerald-600" />
             </div>
             <p className="text-2xl font-black text-gray-900 font-mono">
               {totalHectares.toFixed(2)} <span className="text-sm font-normal text-gray-500">ha</span>
             </p>
-            <p className="text-[11px] text-gray-400 mt-1 font-medium">Surface area in PostGIS</p>
+            <p className="text-[11px] text-gray-400 mt-1 font-medium">{t('postgisArea')}</p>
           </div>
 
           <div className="bg-white rounded-2xl border border-gray-200/80 p-5 shadow-xs">
             <div className="flex items-center justify-between text-xs text-gray-500 font-bold uppercase tracking-wider mb-2">
-              <span>Community Alerts</span>
+              <span>{t('communityAlerts')}</span>
               <Bell className="w-4 h-4 text-amber-500" />
             </div>
             <div className="flex items-baseline gap-2">
@@ -100,31 +102,31 @@ export default function Dashboard() {
                 onClick={() => navigate('/alerts')}
                 className="text-xs text-emerald-700 font-bold hover:underline"
               >
-                View Map →
+                {t('viewMap')}
               </button>
             </div>
-            <p className="text-[11px] text-gray-400 mt-1 font-medium">Village perimeter monitor</p>
+            <p className="text-[11px] text-gray-400 mt-1 font-medium">{t('villagePerimeterMonitor')}</p>
           </div>
 
           <div className="bg-white rounded-2xl border border-gray-200/80 p-5 shadow-xs">
             <div className="flex items-center justify-between text-xs text-gray-500 font-bold uppercase tracking-wider mb-2">
-              <span>Telemetry Engine</span>
+              <span>{t('telemetryEngine')}</span>
               <Activity className="w-4 h-4 text-emerald-600" />
             </div>
             <p className="text-sm font-bold text-gray-900 flex items-center gap-1.5 mt-1">
               <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
               Copernicus S-2 L2A
             </p>
-            <p className="text-[11px] text-gray-400 mt-1 font-medium">10m Optical Multi-Spectral</p>
+            <p className="text-[11px] text-gray-400 mt-1 font-medium">{t('opticalResolution')}</p>
           </div>
         </div>
 
         {/* Section Header & Actions */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-2">
           <div>
-            <h2 className="text-xl font-black tracking-tight text-gray-950">Agricultural Land Holdings</h2>
+            <h2 className="text-xl font-black tracking-tight text-gray-950">{t('agriculturalLandHoldings')}</h2>
             <p className="text-xs text-gray-500 mt-0.5">
-              Select any registered cadastral plot to run multi-spectral stress analysis and generate PMFBY claim evidence.
+              {t('dashboardSubtext')}
             </p>
           </div>
 
@@ -135,7 +137,7 @@ export default function Dashboard() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search by crop or plot #..."
+                placeholder={t('searchPlaceholder')}
                 className="pl-9 pr-3 py-2 bg-white border border-gray-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-emerald-600 w-48 sm:w-56"
               />
             </div>
@@ -144,7 +146,7 @@ export default function Dashboard() {
               className="bg-emerald-800 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-emerald-900 transition flex items-center gap-2 shadow-xs"
             >
               <Plus className="w-4 h-4" />
-              <span>Add New Farm</span>
+              <span>{t('addNewFarm')}</span>
             </button>
           </div>
         </div>
@@ -160,16 +162,16 @@ export default function Dashboard() {
             <div className="w-12 h-12 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-700 mx-auto mb-3">
               <MapPin className="w-6 h-6" />
             </div>
-            <h3 className="text-base font-bold text-gray-800 mb-1">No Farm Holdings Registered Yet</h3>
+            <h3 className="text-base font-bold text-gray-800 mb-1">{t('noFarmsTitle')}</h3>
             <p className="text-xs text-gray-500 max-w-md mx-auto mb-5">
-              Draw your farm boundary on our high-resolution satellite map or import official cadastral geometry directly from AgriStack.
+              {t('noFarmsSubtext')}
             </p>
             <button
               onClick={() => navigate('/add-farm')}
               className="bg-emerald-800 text-white px-5 py-2.5 rounded-xl text-xs font-bold hover:bg-emerald-900 transition inline-flex items-center gap-2"
             >
               <Plus className="w-4 h-4" />
-              Map Your First Farm Boundary
+              {t('addNewFarm')}
             </button>
           </div>
         ) : (
@@ -191,9 +193,9 @@ export default function Dashboard() {
                       <div className="mb-2 bg-emerald-100/90 text-emerald-950 border border-emerald-300 px-2.5 py-1 rounded-lg text-[11px] font-bold flex items-center justify-between font-mono">
                         <span className="flex items-center gap-1.5">
                           <Zap className="w-3.5 h-3.5 text-emerald-700" />
-                          Fast-Track Adjudication Target
+                          {t('fastTrackTarget')}
                         </span>
-                        <span className="text-[10px] text-emerald-800 uppercase font-semibold">Inspect Parcel ›</span>
+                        <span className="text-[10px] text-emerald-800 uppercase font-semibold">{t('inspectParcel')}</span>
                       </div>
                     )}
                     <div className="flex items-start justify-between mb-3">
@@ -218,10 +220,10 @@ export default function Dashboard() {
 
                 <div className="mt-5 pt-3.5 border-t border-gray-100 flex items-center justify-between text-xs">
                   <span className="text-gray-400 text-[11px] font-medium">
-                    Ready for Telemetry Audit
+                    {t('readyForAudit')}
                   </span>
                   <span className="text-emerald-800 font-bold flex items-center gap-1 group-hover:translate-x-1 transition-transform">
-                    <span>Scan Field</span>
+                    <span>{t('scanField')}</span>
                     <ChevronRight className="w-3.5 h-3.5" />
                   </span>
                 </div>

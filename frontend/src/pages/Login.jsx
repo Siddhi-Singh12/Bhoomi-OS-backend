@@ -1,19 +1,22 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import apiClient from '../api/client';
+import { useLanguage } from '../context/LanguageContext';
+import LanguageSelector from '../components/LanguageSelector';
 import { Sprout, ShieldCheck, Smartphone, KeyRound, UserPlus, ArrowRight, Sparkles, AlertCircle, Zap } from 'lucide-react';
 
 export default function Login() {
   const navigate = useNavigate();
+  const { t, setLanguage } = useLanguage();
   const [mode, setMode] = useState('login'); // 'login' or 'register'
   const [form, setForm] = useState({ name: '', phone: '', agristack_id: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   const DEMO_ACCOUNTS = [
-    { id: 'AGR-IND-88219', name: 'Ravi Kumar', state: 'Khargone, MP', phone: '9876543210' },
-    { id: 'AGR-PB-44021', name: 'Gurdeep Singh', state: 'Ludhiana, PB', phone: '9812345678' },
-    { id: 'AGR-MH-99014', name: 'Anand Patil', state: 'Yavatmal, MH', phone: '9420011223' },
+    { id: 'AGR-IND-88219', name: 'Ravi Kumar', state: 'Khargone, MP', phone: '9876543210', lang: 'hi' },
+    { id: 'AGR-PB-44021', name: 'Gurdeep Singh', state: 'Ludhiana, PB', phone: '9812345678', lang: 'pa' },
+    { id: 'AGR-MH-99014', name: 'Anand Patil', state: 'Yavatmal, MH', phone: '9420011223', lang: 'mr' },
   ];
 
   function handleChange(e) {
@@ -22,11 +25,15 @@ export default function Login() {
 
   function handleSelectDemo(acc) {
     setForm({ ...form, agristack_id: acc.id, phone: acc.phone });
+    if (acc.lang) {
+      setLanguage(acc.lang);
+    }
   }
 
   async function handleStartJudgeDemo() {
     setError('');
     setLoading(true);
+    setLanguage('hi');
     try {
       const res = await apiClient.post('/farmers/agristack-login', {
         agristack_id: 'AGR-IND-88219',
@@ -96,6 +103,11 @@ export default function Login() {
       <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-emerald-800/20 rounded-full blur-3xl pointer-events-none"></div>
 
       <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl border border-gray-100 p-8 relative z-10">
+        {/* Language Selector Top Right */}
+        <div className="flex justify-end mb-2">
+          <LanguageSelector variant="light" />
+        </div>
+
         {/* Brand Header */}
         <div className="text-center mb-6">
           <div className="w-12 h-12 bg-emerald-800 rounded-2xl flex items-center justify-center text-white mx-auto mb-3 shadow-md">
@@ -105,12 +117,12 @@ export default function Login() {
             BHOOMI<span className="text-emerald-700">OS</span>
           </h1>
           <p className="text-xs text-gray-500 font-medium mt-0.5">
-            Verified Satellite Evidence Layer for PMFBY Claims
+            {t('appTagline')}
           </p>
 
           <div className="mt-3 inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-800 border border-emerald-200/80 px-3 py-1 rounded-full text-[11px] font-semibold">
             <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-            National AgriStack UFSI Interoperable
+            {t('nationalAgriStack')}
           </div>
         </div>
 
@@ -127,15 +139,15 @@ export default function Login() {
             </div>
             <div className="text-left">
               <span className="font-black text-emerald-300 block tracking-wide text-xs uppercase font-mono">
-                Fast-Track Adjudication Pipeline
+                {t('pipelineTitle')}
               </span>
               <span className="text-[10px] text-slate-300 font-normal">
-                Automated 6-Stage Calamity Verification Workflow
+                {t('fastTrackSubtitle')}
               </span>
             </div>
           </div>
           <div className="flex items-center gap-1 text-[11px] text-emerald-400 font-mono font-bold group-hover:translate-x-1 transition-transform">
-            <span>Execute</span>
+            <span>{t('execute')}</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </div>
         </button>
@@ -145,7 +157,7 @@ export default function Login() {
           <div className="flex items-center justify-between text-[11px] text-gray-500 mb-2 font-medium">
             <span className="flex items-center gap-1 font-semibold text-gray-700">
               <Sparkles className="w-3 h-3 text-amber-500" />
-              Quick Demo Accounts (1-Click Fill)
+              {t('quickDemoAccounts')}
             </span>
           </div>
           <div className="grid grid-cols-3 gap-1.5">
@@ -156,7 +168,7 @@ export default function Login() {
                 onClick={() => handleSelectDemo(acc)}
                 className={`p-2 text-left rounded-lg border text-[11px] transition ${
                   form.agristack_id === acc.id
-                    ? 'bg-emerald-100/70 border-emerald-400 text-emerald-950'
+                    ? 'bg-emerald-100/70 border-emerald-400 text-emerald-950 ring-1 ring-emerald-500'
                     : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-100'
                 }`}
               >
@@ -178,7 +190,7 @@ export default function Login() {
             }`}
           >
             <ShieldCheck className="w-3.5 h-3.5" />
-            AgriStack Auth
+            {t('agristackAuthTab')}
           </button>
           <button
             onClick={() => setMode('register')}
@@ -189,7 +201,7 @@ export default function Login() {
             }`}
           >
             <UserPlus className="w-3.5 h-3.5" />
-            New Farmer
+            {t('newFarmerTab')}
           </button>
         </div>
 
@@ -199,7 +211,7 @@ export default function Login() {
             <div>
               <label className="text-xs font-bold uppercase tracking-wider text-gray-700 flex items-center gap-1.5 mb-1">
                 <KeyRound className="w-3.5 h-3.5 text-gray-400" />
-                AgriStack National ID
+                {t('agristackIdLabel')}
               </label>
               <input
                 name="agristack_id"
@@ -212,14 +224,14 @@ export default function Login() {
 
             <div className="relative flex py-1 items-center">
               <div className="flex-grow border-t border-gray-200"></div>
-              <span className="flex-shrink mx-2 text-[11px] uppercase font-bold text-gray-400">or Mobile OTP</span>
+              <span className="flex-shrink mx-2 text-[11px] uppercase font-bold text-gray-400">{t('orMobileOtp')}</span>
               <div className="flex-grow border-t border-gray-200"></div>
             </div>
 
             <div>
               <label className="text-xs font-bold uppercase tracking-wider text-gray-700 flex items-center gap-1.5 mb-1">
                 <Smartphone className="w-3.5 h-3.5 text-gray-400" />
-                Linked Aadhaar Mobile
+                {t('mobileOtpLabel')}
               </label>
               <input
                 name="phone"
@@ -243,10 +255,10 @@ export default function Login() {
               className="w-full bg-emerald-800 text-white py-3 rounded-xl font-bold hover:bg-emerald-900 active:scale-[0.99] transition disabled:opacity-50 flex items-center justify-center gap-2 shadow-sm text-sm"
             >
               {loading ? (
-                <>Verifying with AgriStack UFSI...</>
+                <>{t('verifyingAgriStack')}</>
               ) : (
                 <>
-                  <span>Authenticate & Load Plots</span>
+                  <span>{t('authButton')}</span>
                   <ArrowRight className="w-4 h-4" />
                 </>
               )}
@@ -256,7 +268,7 @@ export default function Login() {
           <form onSubmit={handleRegister} className="space-y-4">
             <div>
               <label className="text-xs font-bold uppercase tracking-wider text-gray-700 block mb-1">
-                Farmer Full Name
+                {t('farmerFullName')}
               </label>
               <input
                 name="name"
@@ -270,7 +282,7 @@ export default function Login() {
 
             <div>
               <label className="text-xs font-bold uppercase tracking-wider text-gray-700 block mb-1">
-                Mobile Number
+                {t('mobileNumber')}
               </label>
               <input
                 name="phone"
@@ -294,14 +306,14 @@ export default function Login() {
               disabled={loading}
               className="w-full bg-emerald-800 text-white py-3 rounded-xl font-bold hover:bg-emerald-900 active:scale-[0.99] transition disabled:opacity-50 flex items-center justify-center gap-2 shadow-sm text-sm"
             >
-              {loading ? 'Registering...' : 'Complete Registration'}
+              {loading ? t('processing') : t('registerButton')}
             </button>
           </form>
         )}
 
         <div className="mt-6 pt-4 border-t border-gray-100 text-center">
           <p className="text-[11px] text-gray-400">
-            Compliant with PMFBY Calamity Claim Verification Protocols 2026
+            {t('pmfbyComplianceNote')}
           </p>
         </div>
       </div>

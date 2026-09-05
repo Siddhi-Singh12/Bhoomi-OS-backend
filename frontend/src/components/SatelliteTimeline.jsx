@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import {
   Calendar,
   Orbit,
@@ -15,6 +16,7 @@ import {
 } from 'lucide-react';
 
 export default function SatelliteTimeline({ currentAnalysis, farm }) {
+  const { t } = useLanguage();
   const today = new Date();
 
   const formatDate = (daysAgo) => {
@@ -158,17 +160,17 @@ export default function SatelliteTimeline({ currentAnalysis, farm }) {
           <div className="flex items-center gap-2 mb-1">
             <Orbit className="w-4 h-4 text-emerald-700" />
             <span className="text-xs font-bold uppercase tracking-wider text-emerald-800">
-              Copernicus Sentinel-2 Orbit Tracker
+              {t('orbitTrackerTitle')}
             </span>
             <span className="text-[10px] bg-gray-100 text-gray-700 px-2 py-0.5 rounded font-mono">
-              5-Day Revisit Cycle
+              {t('fiveDayCycle')}
             </span>
           </div>
           <h3 className="text-lg font-bold text-gray-900">
-            Multi-Temporal Satellite Health History
+            {t('timelineTitle')}
           </h3>
           <p className="text-xs text-gray-500 mt-0.5">
-            Audit multi-spectral vegetation index (NDVI) and hydration depletion across temporal passes.
+            {t('timelineSubtext')}
           </p>
         </div>
 
@@ -184,7 +186,7 @@ export default function SatelliteTimeline({ currentAnalysis, farm }) {
           <div className="flex items-center gap-2">
             <Activity className="w-4 h-4 text-emerald-400" />
             <span className="text-xs font-bold uppercase tracking-wider text-slate-200 font-mono">
-              NDVI Canopy Health Trajectory
+              {t('trajectoryGraphTitle')}
             </span>
           </div>
           <span className="text-[11px] text-slate-400 font-mono">
@@ -315,24 +317,24 @@ export default function SatelliteTimeline({ currentAnalysis, farm }) {
         {/* NDVI Severity Legend */}
         <div className="pt-2 border-t border-slate-800 flex flex-wrap items-center justify-between gap-3 text-[11px]">
           <span className="text-slate-400 font-mono font-bold uppercase tracking-wide">
-            NDVI Severity Legend:
+            {t('severityLegend')}
           </span>
           <div className="flex flex-wrap items-center gap-3">
             <div className="flex items-center gap-1.5">
               <span className="w-2.5 h-2.5 rounded-full bg-red-500"></span>
-              <span className="text-slate-300 font-mono">0.0–0.2 Critical Stress</span>
+              <span className="text-slate-300 font-mono">{t('sevCritical')}</span>
             </div>
             <div className="flex items-center gap-1.5">
               <span className="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
-              <span className="text-slate-300 font-mono">0.2–0.4 Severe Stress</span>
+              <span className="text-slate-300 font-mono">{t('sevSevere')}</span>
             </div>
             <div className="flex items-center gap-1.5">
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
-              <span className="text-slate-300 font-mono">0.4–0.6 Moderate</span>
+              <span className="text-slate-300 font-mono">{t('sevModerate')}</span>
             </div>
             <div className="flex items-center gap-1.5">
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-600"></span>
-              <span className="text-slate-300 font-mono">0.6–1.0 Healthy</span>
+              <span className="text-slate-300 font-mono">{t('sevHealthy')}</span>
             </div>
           </div>
         </div>
@@ -393,7 +395,7 @@ export default function SatelliteTimeline({ currentAnalysis, farm }) {
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-xs font-bold uppercase tracking-wider text-gray-800">
-                  Pass Details: {selected.step}
+                  {t('passDetails')}: {selected.step}
                 </span>
                 <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border ${selected.statusColor}`}>
                   {selected.status}
@@ -404,7 +406,7 @@ export default function SatelliteTimeline({ currentAnalysis, farm }) {
               </p>
             </div>
             <div className="text-right">
-              <span className="text-[10px] uppercase font-bold text-gray-400 block">Cloud Cover</span>
+              <span className="text-[10px] uppercase font-bold text-gray-400 block">{t('cloudCover')}</span>
               <span className="text-xs font-mono font-bold text-gray-700">{selected.cloudCover}</span>
             </div>
           </div>
@@ -415,7 +417,7 @@ export default function SatelliteTimeline({ currentAnalysis, farm }) {
 
           <div className="grid grid-cols-3 gap-3">
             <div className="bg-white rounded-lg border border-gray-200/70 p-3">
-              <span className="text-[10px] text-gray-400 uppercase font-semibold block">Canopy NDVI</span>
+              <span className="text-[10px] text-gray-400 uppercase font-semibold block">{t('canopyNdvi')}</span>
               <span
                 className={`text-lg font-mono font-black ${
                   selected.ndvi < 0.35
@@ -431,7 +433,7 @@ export default function SatelliteTimeline({ currentAnalysis, farm }) {
             </div>
 
             <div className="bg-white rounded-lg border border-gray-200/70 p-3">
-              <span className="text-[10px] text-gray-400 uppercase font-semibold block">Water Index (NDWI)</span>
+              <span className="text-[10px] text-gray-400 uppercase font-semibold block">{t('waterIndexNdwi')}</span>
               <span className="text-lg font-mono font-black text-gray-900">
                 {selected.ndwi.toFixed(3)}
               </span>
@@ -439,7 +441,7 @@ export default function SatelliteTimeline({ currentAnalysis, farm }) {
             </div>
 
             <div className="bg-white rounded-lg border border-gray-200/70 p-3">
-              <span className="text-[10px] text-gray-400 uppercase font-semibold block">7d Rain Telemetry</span>
+              <span className="text-[10px] text-gray-400 uppercase font-semibold block">{t('rainTelemetry')}</span>
               <span className="text-lg font-mono font-black text-gray-900">
                 {selected.rainfall7d.toFixed(1)} <span className="text-xs font-normal text-gray-500">mm</span>
               </span>
@@ -454,7 +456,7 @@ export default function SatelliteTimeline({ currentAnalysis, farm }) {
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
                 <Eye className="w-3.5 h-3.5" />
-                Before vs After Evidence
+                {t('beforeAfterTitle')}
               </span>
               <span className="text-[10px] bg-gray-800 text-gray-300 px-2 py-0.5 rounded font-mono">
                 B8/B4 Multi-Band
@@ -463,7 +465,7 @@ export default function SatelliteTimeline({ currentAnalysis, farm }) {
 
             {/* Clear Simulation Disclosure */}
             <p className="text-[11px] text-emerald-300/90 font-medium mb-3">
-              Derived Satellite Spectral Simulation
+              {t('spectralSimulationDisclosure')}
             </p>
 
             {/* Comparison Cards */}
@@ -473,7 +475,7 @@ export default function SatelliteTimeline({ currentAnalysis, farm }) {
                 <div className="flex items-center justify-between mb-1">
                   <span className="font-bold text-emerald-300 flex items-center gap-1">
                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                    T-20d Baseline
+                    {t('baselinePass')}
                   </span>
                   <span className="font-mono text-gray-400">{baseline.date}</span>
                 </div>
@@ -495,7 +497,7 @@ export default function SatelliteTimeline({ currentAnalysis, farm }) {
                     }`}
                   >
                     <AlertTriangle className="w-3.5 h-3.5" />
-                    Current Pass
+                    {t('currentPass')}
                   </span>
                   <span className="font-mono text-gray-400">{currentPass.date}</span>
                 </div>

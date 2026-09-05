@@ -1,9 +1,12 @@
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useLanguage } from '../context/LanguageContext';
+import LanguageSelector from './LanguageSelector';
 import { Sprout, ScanLine, Bell, ShieldCheck, LogOut, Radio, User, Zap } from 'lucide-react';
 
 export default function AppHeader({ farmer }) {
   const navigate = useNavigate();
   const location = useLocation();
+  const { t } = useLanguage();
 
   const isDashboard = location.pathname === '/dashboard' || location.pathname.startsWith('/farm');
   const isAlerts = location.pathname === '/alerts';
@@ -23,13 +26,17 @@ export default function AppHeader({ farmer }) {
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-lg font-extrabold tracking-tight text-gray-950">BHOOMI<span className="text-emerald-700">OS</span></span>
+              <span className="text-lg font-extrabold tracking-tight text-gray-950">
+                {t('appName', 'BHOOMI OS')}
+              </span>
               <span className="inline-flex items-center gap-1 text-[11px] bg-emerald-50 text-emerald-800 border border-emerald-200/80 px-2 py-0.5 rounded-md font-semibold tracking-wide">
                 <ShieldCheck className="w-3 h-3 text-emerald-600" />
-                AgriStack Verified
+                {t('agristackVerified', 'AgriStack Verified')}
               </span>
             </div>
-            <p className="text-[11px] text-gray-500 tracking-tight font-medium">Verified Sentinel-2 Evidence Layer for PMFBY Claims</p>
+            <p className="text-[11px] text-gray-500 tracking-tight font-medium">
+              {t('appTagline', 'Verified Sentinel-2 Evidence Layer for PMFBY Claims')}
+            </p>
           </div>
         </div>
 
@@ -44,7 +51,7 @@ export default function AppHeader({ farmer }) {
             title="Launch automated PMFBY claim adjudication pipeline"
           >
             <Zap className="w-3.5 h-3.5 text-amber-400" />
-            <span>Fast-Track Pipeline</span>
+            <span>{t('pipelineTitle', 'Fast-Track Pipeline')}</span>
           </button>
 
           <button
@@ -56,7 +63,7 @@ export default function AppHeader({ farmer }) {
             }`}
           >
             <ScanLine className="w-4 h-4 text-emerald-600" />
-            Field Scanner
+            {t('fieldScanner', 'Field Scanner')}
           </button>
           <button
             onClick={() => navigate('/alerts')}
@@ -67,7 +74,7 @@ export default function AppHeader({ farmer }) {
             }`}
           >
             <Bell className="w-4 h-4 text-amber-600" />
-            Village Alerts
+            {t('villageAlerts', 'Village Alerts')}
           </button>
           <div className="h-4 w-px bg-gray-200 mx-1"></div>
           <span className="inline-flex items-center gap-1.5 bg-gray-50 border border-gray-200 text-gray-700 px-2.5 py-1 rounded-full text-xs font-mono font-medium">
@@ -79,24 +86,28 @@ export default function AppHeader({ farmer }) {
           </span>
         </nav>
 
-        <div className="flex items-center gap-4">
-          <div className="text-right hidden sm:block border-r border-gray-200 pr-4">
+        <div className="flex items-center gap-3">
+          {/* Multilingual Selector */}
+          <LanguageSelector variant="light" />
+
+          <div className="text-right hidden sm:block border-l border-gray-200 pl-3">
             <div className="flex items-center justify-end gap-1.5">
               <User className="w-3.5 h-3.5 text-gray-400" />
               <p className="text-xs font-semibold text-gray-900">{farmer?.name || 'Farmer Beneficiary'}</p>
             </div>
             <p className="text-[11px] font-mono text-gray-500">{farmer?.agristack_id || farmer?.phone || 'AgriStack ID Linked'}</p>
           </div>
+
           <button
             onClick={() => {
               localStorage.clear();
               navigate('/');
             }}
             title="Sign out of session"
-            className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-red-600 px-2.5 py-1.5 rounded-lg hover:bg-red-50 transition font-medium"
+            className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-red-600 px-2 py-1.5 rounded-lg hover:bg-red-50 transition font-medium"
           >
             <LogOut className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Logout</span>
+            <span className="hidden sm:inline">{t('logout', 'Logout')}</span>
           </button>
         </div>
       </div>

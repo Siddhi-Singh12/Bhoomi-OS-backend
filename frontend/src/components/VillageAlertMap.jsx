@@ -1,6 +1,7 @@
 import React from 'react';
 import { MapContainer, TileLayer, Circle, Marker, Popup, LayersControl } from 'react-leaflet';
 import L from 'leaflet';
+import { useLanguage } from '../context/LanguageContext';
 import {
   AlertTriangle,
   MapPin,
@@ -43,6 +44,7 @@ const createNearbyIcon = (status = 'High') => {
 };
 
 export default function VillageAlertMap({ alert, sourceFarm, radiusKm = 2, scenarioType = 'DROUGHT' }) {
+  const { language, t } = useLanguage();
   const centerLat = Number(
     alert?.lat ?? sourceFarm?.centroid?.lat ?? (sourceFarm?.boundary?.coordinates?.[0]?.[0]?.[1]) ?? 21.8255
   );
@@ -72,13 +74,41 @@ export default function VillageAlertMap({ alert, sourceFarm, radiusKm = 2, scena
     ? { critical: 0, high: 1, moderate: 3, low: 1 }
     : { critical: 0, high: 0, moderate: 0, normal: 5 };
 
+  const getDroughtResponses = () => {
+    if (language === 'hi') {
+      return [
+        { title: 'खेत सत्यापन अनुशंसित', desc: '2.0 किमी आपदा परिधि के अंतर्गत PostGIS सीमांकन सत्यापन करें', icon: <CheckCircle2 className="w-4 h-4 text-emerald-600" /> },
+        { title: 'प्रभावित खसरे अधिसूचित करें', desc: '4 निकटवर्ती किसानों को एग्रीस्टैक स्वचालित SMS परामर्श भेजें', icon: <Bell className="w-4 h-4 text-amber-600" /> },
+        { title: 'फसल-नुकसान आकलन आरंभ करें', desc: 'PMFBY खंड 8 स्थानीयकृत आपदा आकलन प्रोटोकॉल सक्रिय करें', icon: <Activity className="w-4 h-4 text-red-600" /> },
+        { title: 'डिजिटल दावा साक्ष्य तैयार करें', desc: 'त्वरित दावा निपटारे हेतु SHA-256 सील PDF साक्ष्य संकलित करें', icon: <FileText className="w-4 h-4 text-blue-600" /> },
+      ];
+    }
+    if (language === 'pa') {
+      return [
+        { title: 'ਜ਼ਮੀਨੀ ਪੜਤਾਲ ਦੀ ਸਿਫ਼ਾਰਸ਼', desc: '2.0 ਕਿਲੋਮੀਟਰ ਆਫ਼ਤ ਖੇਤਰ ਅੰਦਰ PostGIS ਤਸਦੀਕ ਕਰੋ', icon: <CheckCircle2 className="w-4 h-4 text-emerald-600" /> },
+        { title: 'ਪ੍ਰਭਾਵਿਤ ਕਿਸਾਨਾਂ ਨੂੰ ਸੂਚਿਤ ਕਰੋ', desc: '4 ਨਾਲ ਲੱਗਦੇ ਕਿਸਾਨਾਂ ਨੂੰ ਐਗਰੀਸਟੈਕ SMS ਸੁਨੇਹੇ ਜਾਰੀ ਕਰੋ', icon: <Bell className="w-4 h-4 text-amber-600" /> },
+        { title: 'ਫ਼ਸਲ ਨੁਕਸਾਨ ਮੁਲਾਂਕਣ ਸ਼ੁਰੂ ਕਰੋ', desc: 'PMFBY ਧਾਰਾ 8 ਅਧੀਨ ਆਫ਼ਤ ਨਿਪਟਾਰਾ ਪ੍ਰਕਿਰਿਆ ਸਰਗਰਮ ਕਰੋ', icon: <Activity className="w-4 h-4 text-red-600" /> },
+        { title: 'ਡਿਜੀਟਲ ਦਾਅਵਾ ਸਬੂਤ ਸੀਲ ਕਰੋ', desc: 'ਤੁਰੰਤ ਦਾਅਵੇ ਲਈ SHA-256 ਦਸਤਖਤੀ PDF ਪੈਕੇਟ ਤਿਆਰ ਕਰੋ', icon: <FileText className="w-4 h-4 text-blue-600" /> },
+      ];
+    }
+    if (language === 'mr') {
+      return [
+        { title: 'प्रत्यक्ष पाहणीची शिफारस', desc: '2.0 किमी आपत्ती क्षेत्रात PostGIS भू-पडताळणी करा', icon: <CheckCircle2 className="w-4 h-4 text-emerald-600" /> },
+        { title: 'बाधित शेतकरी सूचित करा', desc: '4 लगतच्या शेतकर्‍यांना अ‍ॅग्रीस्टॅक SMS सूचना पाठवा', icon: <Bell className="w-4 h-4 text-amber-600" /> },
+        { title: 'पीक नुकसान मूल्यमापन सुरू करा', desc: 'PMFBY कलम 8 अंतर्गत स्थानिक आपत्ती मूल्यांकन प्रोटोकॉल सक्रिय करा', icon: <Activity className="w-4 h-4 text-red-600" /> },
+        { title: 'डिजिटल दावा पुरावा संकलित करा', desc: 'जलद दावा मंजुरीसाठी SHA-256 सील केलेले PDF पॅकेट तयार करा', icon: <FileText className="w-4 h-4 text-blue-600" /> },
+      ];
+    }
+    return [
+      { title: 'Field verification recommended', desc: 'Execute PostGIS perimeter validation within 2.0 km calamity zone', icon: <CheckCircle2 className="w-4 h-4 text-emerald-600" /> },
+      { title: 'Notify affected holdings', desc: 'Dispatch automated AgriStack SMS advisories to 4 adjacent landholders', icon: <Bell className="w-4 h-4 text-amber-600" /> },
+      { title: 'Initiate crop-loss assessment', desc: 'Trigger PMFBY Section 8 localized calamity assessment protocol', icon: <Activity className="w-4 h-4 text-red-600" /> },
+      { title: 'Generate claim evidence', desc: 'Seal cryptographic PDF proof packets for expedited claim settlement', icon: <FileText className="w-4 h-4 text-blue-600" /> },
+    ];
+  };
+
   const responses = isDrought
-    ? [
-        { title: 'Field verification recommended', desc: 'Execute PostGIS perimeter validation within 2.0 km calamity zone', icon: <CheckCircle2 className="w-4 h-4 text-emerald-600" /> },
-        { title: 'Notify affected holdings', desc: 'Dispatch automated AgriStack SMS advisories to 4 adjacent landholders', icon: <Bell className="w-4 h-4 text-amber-600" /> },
-        { title: 'Initiate crop-loss assessment', desc: 'Trigger PMFBY Section 8 localized calamity assessment protocol', icon: <Activity className="w-4 h-4 text-red-600" /> },
-        { title: 'Generate claim evidence', desc: 'Seal cryptographic PDF proof packets for expedited claim settlement', icon: <FileText className="w-4 h-4 text-blue-600" /> },
-      ]
+    ? getDroughtResponses()
     : isPest
     ? [
         { title: 'Field inspection recommended', desc: 'Ground truth entomological sampling across anomalous canopy parcels', icon: <CheckCircle2 className="w-4 h-4 text-emerald-600" /> },
@@ -126,7 +156,7 @@ export default function VillageAlertMap({ alert, sourceFarm, radiusKm = 2, scena
             <div className="flex items-center gap-2">
               <Users className="w-4 h-4 text-emerald-700" />
               <h4 className="text-xs font-black uppercase tracking-wider text-slate-900 font-mono">
-                Community Impact
+                {t('communityImpactTitle')}
               </h4>
             </div>
             <span className="text-[11px] text-slate-500 font-mono">
@@ -137,7 +167,7 @@ export default function VillageAlertMap({ alert, sourceFarm, radiusKm = 2, scena
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             <div className="bg-white rounded-lg border border-slate-200 p-3">
               <span className="text-[10px] text-slate-500 uppercase font-semibold block">
-                Affected Holdings
+                {t('affectedHoldings')}
               </span>
               <span className="text-lg font-black text-slate-900 font-mono">
                 {totalHoldings} <span className="text-xs font-normal text-slate-500">Parcels</span>
@@ -147,7 +177,7 @@ export default function VillageAlertMap({ alert, sourceFarm, radiusKm = 2, scena
 
             <div className="bg-white rounded-lg border border-slate-200 p-3">
               <span className="text-[10px] text-slate-500 uppercase font-semibold block">
-                Affected Area
+                {t('affectedArea')}
               </span>
               <span className="text-lg font-black text-slate-900 font-mono">
                 {totalArea} <span className="text-xs font-normal text-slate-500">Hectares</span>
@@ -157,7 +187,7 @@ export default function VillageAlertMap({ alert, sourceFarm, radiusKm = 2, scena
 
             <div className="bg-white rounded-lg border border-slate-200 p-3">
               <span className="text-[10px] text-slate-500 uppercase font-semibold block">
-                Impact Radius
+                {t('impactRadius')}
               </span>
               <span className="text-lg font-black text-slate-900 font-mono">
                 {radiusKm}.0 <span className="text-xs font-normal text-slate-500">km</span>
@@ -167,7 +197,7 @@ export default function VillageAlertMap({ alert, sourceFarm, radiusKm = 2, scena
 
             <div className="bg-white rounded-lg border border-slate-200 p-3">
               <span className="text-[10px] text-slate-500 uppercase font-semibold block">
-                Risk Distribution
+                {t('riskDistribution')}
               </span>
               {isDrought ? (
                 <div className="text-xs font-mono font-bold text-slate-800 mt-1 flex items-center gap-1.5 flex-wrap">
@@ -287,7 +317,7 @@ export default function VillageAlertMap({ alert, sourceFarm, radiusKm = 2, scena
           <div className="flex items-center justify-between border-b border-slate-100 pb-2">
             <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800 font-mono flex items-center gap-1.5">
               <ShieldAlert className="w-3.5 h-3.5 text-emerald-700" />
-              Recommended Operational Response
+              {t('recommendedResponsesTitle')}
             </h4>
             <span className="text-[11px] text-slate-400 font-mono">PMFBY Adjudication Protocol</span>
           </div>
