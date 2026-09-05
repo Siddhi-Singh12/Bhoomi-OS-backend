@@ -99,25 +99,63 @@ async function agristackLogin(req, res, next) {
       });
     }
 
-    const mockToken = `bhoomi_jwt_${Buffer.from(`${farmer?.id || 'mock'}:${Date.now()}`).toString('base64')}`;
+    // Fallback deterministic profile & farms if DB was unreachable or disconnected
+    const fallbackIdMap = {
+      'AGR-IND-88219': 1,
+      'AGR-PB-44021': 2,
+      'AGR-MH-99014': 4,
+    };
+    const fallbackId = (registryData && fallbackIdMap[registryData.agristack_id]) || 1;
+
+    const resolvedFarmer = farmer || {
+      id: fallbackId,
+      name: registryData.name,
+      phone: registryData.phone,
+      agristack_id: registryData.agristack_id,
+      language: registryData.language,
+    };
+
+    // If farms array is empty due to DB failure, provide mock farm structure so Dashboard does not crash
+    let resolvedFarms = farms;
+    if (!resolvedFarms || resolvedFarms.length === 0) {
+      resolvedFarms = [
+        {
+          id: resolvedFarmer.id === 2 ? 6 : resolvedFarmer.id === 4 ? 11 : 1,
+          farmer_id: resolvedFarmer.id,
+          farmer_name: resolvedFarmer.name,
+          agristack_id: resolvedFarmer.agristack_id,
+          crop_type: resolvedFarmer.id === 2 ? 'Wheat' : resolvedFarmer.id === 4 ? 'Soybean' : 'Cotton',
+          area_hectares: resolvedFarmer.id === 2 ? 4.8 : resolvedFarmer.id === 4 ? 3.12 : 2.35,
+          boundary: {
+            type: 'Polygon',
+            coordinates: [
+              [
+                [75.61, 21.82],
+                [75.62, 21.82],
+                [75.62, 21.83],
+                [75.61, 21.83],
+                [75.61, 21.82],
+              ],
+            ],
+          },
+          centroid: { lat: 21.824, lng: 75.615 },
+        },
+      ];
+    }
+
+    const mockToken = `bhoomi_jwt_${Buffer.from(`${resolvedFarmer.id}:${Date.now()}`).toString('base64')}`;
 
     res.json({
       success: true,
       message: 'AgriStack authentication successful',
       token: mockToken,
-      farmer: farmer || {
-        id: null,
-        name: registryData.name,
-        phone: registryData.phone,
-        agristack_id: registryData.agristack_id,
-        language: registryData.language,
-      },
+      farmer: resolvedFarmer,
       agristack_profile: {
         verified: true,
         registry: registryData,
         verified_at: new Date().toISOString(),
       },
-      farms,
+      farms: resolvedFarms,
     });
   } catch (err) {
     next(err);

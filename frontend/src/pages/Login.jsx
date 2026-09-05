@@ -62,16 +62,36 @@ export default function Login() {
   async function handleLogin(e) {
     e.preventDefault();
     setError('');
+    const targetAgriStackId = form.agristack_id?.trim() || (!form.phone?.trim() ? DEMO_ACCOUNTS[0].id : undefined);
+    const targetPhone = form.phone?.trim() || (!form.agristack_id?.trim() ? DEMO_ACCOUNTS[0].phone : undefined);
+
     setLoading(true);
     try {
       const res = await apiClient.post('/farmers/agristack-login', {
-        agristack_id: form.agristack_id || undefined,
-        phone: form.phone || undefined,
+        agristack_id: targetAgriStackId,
+        phone: targetPhone,
       });
       localStorage.setItem('farmer', JSON.stringify(res.data.farmer));
       localStorage.setItem('token', res.data.token);
       navigate('/dashboard');
     } catch (err) {
+      // If backend is unreachable, provide graceful fallback for the selected demo account
+      const matchedDemo = DEMO_ACCOUNTS.find(
+        (acc) => acc.id === targetAgriStackId || acc.phone === targetPhone
+      ) || DEMO_ACCOUNTS[0];
+
+      if (!err.response || err.code === 'ERR_NETWORK') {
+        const fallbackFarmer = {
+          id: matchedDemo.id === 'AGR-PB-44021' ? 2 : matchedDemo.id === 'AGR-MH-99014' ? 4 : 1,
+          name: matchedDemo.name,
+          phone: matchedDemo.phone,
+          agristack_id: matchedDemo.id,
+        };
+        localStorage.setItem('farmer', JSON.stringify(fallbackFarmer));
+        localStorage.setItem('token', 'local-demo-token');
+        navigate('/dashboard');
+        return;
+      }
       setError(err.response?.data?.error || 'Login failed');
     } finally {
       setLoading(false);
