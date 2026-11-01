@@ -244,14 +244,3 @@ BHOOMI_OS/
 | **Public Good & Governance** | Directly supports Panchayat administrative decisions and provides tamper-evident SHA-256 PDF dossiers for expedited PMFBY crop insurance settlements. |
 | **Scalability & Resilience** | Resilient dual-engine database architecture (PostGIS + SQLite) ensures zero downtime even in rural offline environments. |
 
----
-
-## 8. Authors & Credits
-
-**Team Code Runners — DTU (Delhi Technological University)**
-- **Siddhi Singh** — Principal Software Architect & Full-Stack Lead
-- **Hridyansh Awasthi** — AI/ML & Geospatial Systems Engineer
-- **Priyanshi Singh** — Backend & Database Architect
-- **Anjali** — Frontend UI/UX & Agricultural Domain Specialist
-
-Developed for the **SEVA FIRST Innovation Challenge 2026**.
