@@ -11,6 +11,8 @@ const analysisRoutes = require('./routes/analysis.routes');
 const proofPacketRoutes = require('./routes/proofPacket.routes');
 const alertRoutes = require('./routes/alert.routes');
 const agristackRoutes = require('./routes/agristackUfsi.routes');
+const droneRoutes = require('./routes/drone.routes');
+const panchayatRoutes = require('./routes/panchayat.routes');
 
 const app = express();
 
@@ -27,8 +29,8 @@ app.use('/proofs', express.static(path.join(__dirname, '../public/proofs')));
 app.get('/', (req, res) => {
   res.json({
     status: 'online',
-    service: 'Bhoomi OS Backend (Verified Evidence Layer for Agriculture)',
-    version: '1.0.0',
+    service: 'Bhoomi Intelligence (AI-Powered Multi-Resolution Agricultural & Drone Monitoring System)',
+    version: '2.0.0',
     timestamp: new Date().toISOString(),
   });
 });
@@ -40,6 +42,8 @@ app.use('/api/analyses', analysisRoutes);
 app.use('/api/proof-packets', proofPacketRoutes);
 app.use('/api/alerts', alertRoutes);
 app.use('/api/agristack', agristackRoutes);
+app.use('/api/drone', droneRoutes);
+app.use('/api/panchayat', panchayatRoutes);
 
 // 404 Fallback
 app.use((req, res, next) => {

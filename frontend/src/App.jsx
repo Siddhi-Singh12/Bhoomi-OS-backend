@@ -5,6 +5,8 @@ import AddFarm from './pages/AddFarm';
 import FarmDetail from './pages/FarmDetail';
 import Alerts from './pages/Alerts';
 import VerifyPacket from './pages/VerifyPacket';
+import DronePlanner from './pages/DronePlanner';
+import PanchayatDashboard from './pages/PanchayatDashboard';
 import { LanguageProvider } from './context/LanguageContext';
 
 export default function App() {
@@ -14,6 +16,8 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Login />} />
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/panchayat" element={<PanchayatDashboard />} />
+          <Route path="/drone-planner" element={<DronePlanner />} />
           <Route path="/add-farm" element={<AddFarm />} />
           <Route path="/farm/:id" element={<FarmDetail />} />
           <Route path="/alerts" element={<Alerts />} />

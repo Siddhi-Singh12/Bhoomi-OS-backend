@@ -4,7 +4,7 @@ import apiClient from '../api/client';
 import AppHeader from '../components/AppHeader';
 import JudgeDemoBar from '../components/JudgeDemoBar';
 import { useLanguage } from '../context/LanguageContext';
-import { Plus, ScanLine, MapPin, Bell, Layers, ShieldCheck, ChevronRight, Activity, Sprout, Search, Zap } from 'lucide-react';
+import { Plus, ScanLine, MapPin, Bell, Layers, ShieldCheck, ChevronRight, Activity, Sprout, Search, Zap, Plane } from 'lucide-react';
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -69,6 +69,42 @@ export default function Dashboard() {
       )}
 
       <main className="max-w-7xl mx-auto px-6 py-8 space-y-6">
+        {/* Multi-Resolution Surveillance Navigation Banner */}
+        <div className="bg-gradient-to-r from-emerald-950 via-emerald-900 to-teal-950 rounded-2xl p-5 text-white shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 border border-emerald-800/80">
+          <div className="flex items-center gap-3.5">
+            <div className="w-11 h-11 rounded-xl bg-emerald-800/80 border border-emerald-700 flex items-center justify-center text-emerald-200 shrink-0">
+              <Zap className="w-6 h-6 text-amber-300" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="text-base font-bold">BHOOMI INTELLIGENCE Multi-Resolution System</h2>
+                <span className="bg-amber-400 text-emerald-950 font-bold text-[10px] px-2 py-0.5 rounded-full font-mono">
+                  SEVA FIRST 2026
+                </span>
+              </div>
+              <p className="text-xs text-emerald-200/80 mt-0.5">
+                Satellite screens all fields at 10m &rarr; Drone confirms anomalies at 1.64cm &rarr; AI fuses evidence into actionable alerts
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2.5 shrink-0">
+            <button
+              onClick={() => navigate('/drone-planner')}
+              className="bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5 transition shadow-xs"
+            >
+              <Plane className="w-3.5 h-3.5" />
+              <span>Drone Planner</span>
+            </button>
+            <button
+              onClick={() => navigate('/panchayat')}
+              className="bg-white/10 hover:bg-white/20 border border-white/20 text-white text-xs font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5 transition"
+            >
+              <Layers className="w-3.5 h-3.5 text-emerald-300" />
+              <span>Panchayat Dashboard</span>
+            </button>
+          </div>
+        </div>
+
         {/* KPI Stats Overview */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="bg-white rounded-2xl border border-gray-200/80 p-5 shadow-xs">

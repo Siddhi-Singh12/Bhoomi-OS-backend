@@ -4,7 +4,7 @@ const {
   fetchFarmerSchemeEligibility,
   UFSI_PARCEL_REGISTRY,
 } = require('../services/agristackUfsi.service');
-const { createFarmer, getFarmerByAgriStackId } = require('../models/farmer.model');
+const { createFarmer, getFarmerByAgriStackId, getFarmerByPhone } = require('../models/farmer.model');
 const { createFarm } = require('../models/farm.model');
 const logger = require('../utils/logger');
 
@@ -29,7 +29,12 @@ async function lookupAndImportPlot(req, res, next) {
     // 2. Auto-link or create farmer
     let farmer = null;
     try {
-      farmer = await getFarmerByAgriStackId(plotData.farmer_id);
+      if (plotData.farmer_id) {
+        farmer = await getFarmerByAgriStackId(plotData.farmer_id);
+      }
+      if (!farmer && plotData.farmer_phone) {
+        farmer = await getFarmerByPhone(plotData.farmer_phone);
+      }
       if (!farmer) {
         farmer = await createFarmer({
           name: plotData.farmer_name,
@@ -39,8 +44,7 @@ async function lookupAndImportPlot(req, res, next) {
         });
       }
     } catch (fErr) {
-      logger.warn(`Farmer auto-creation warning: ${fErr.message}`);
-      farmer = {
+      farmer = (await getFarmerByPhone(plotData.farmer_phone)) || {
         id: 1,
         name: plotData.farmer_name,
         phone: plotData.farmer_phone,

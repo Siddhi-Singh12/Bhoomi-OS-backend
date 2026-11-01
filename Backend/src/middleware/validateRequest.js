@@ -3,7 +3,7 @@
  */
 
 function validateFarmerRegistration(req, res, next) {
-  const { name, phone } = req.body;
+  const { name, phone } = req.body || {};
   if (!name || typeof name !== 'string' || name.trim().length === 0) {
     return res.status(400).json({ success: false, error: 'Valid "name" is required.' });
   }
@@ -14,7 +14,7 @@ function validateFarmerRegistration(req, res, next) {
 }
 
 function validateFarmCreation(req, res, next) {
-  const { farmer_id, boundary } = req.body;
+  const { farmer_id, boundary } = req.body || {};
   if (!farmer_id || isNaN(parseInt(farmer_id, 10))) {
     return res.status(400).json({ success: false, error: 'Valid numeric "farmer_id" is required.' });
   }
@@ -25,7 +25,7 @@ function validateFarmCreation(req, res, next) {
 }
 
 function validateAnalysisRequest(req, res, next) {
-  const { farm_id, coordinates } = req.body;
+  const { farm_id, coordinates } = req.body || {};
   if (!farm_id && !coordinates) {
     return res.status(400).json({ success: false, error: 'Either "farm_id" or "coordinates" must be provided.' });
   }
@@ -36,7 +36,7 @@ function validateAnalysisRequest(req, res, next) {
 }
 
 function validateAgriStackLogin(req, res, next) {
-  const { agristack_id, phone } = req.body;
+  const { agristack_id, phone } = req.body || {};
   if (!agristack_id && !phone) {
     return res.status(400).json({
       success: false,

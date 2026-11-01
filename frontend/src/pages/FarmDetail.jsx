@@ -6,6 +6,7 @@ import MetricGauge from '../components/MetricGauge';
 import AIRiskScoreCard from '../components/AIRiskScoreCard';
 import SatelliteTimeline from '../components/SatelliteTimeline';
 import VillageAlertMap from '../components/VillageAlertMap';
+import DroneInspectionPanel from '../components/DroneInspectionPanel';
 import JudgeDemoBar from '../components/JudgeDemoBar';
 import { useLanguage } from '../context/LanguageContext';
 import {
@@ -440,7 +441,13 @@ export default function FarmDetail() {
               </div>
             </div>
 
-            {/* PHASE 3: SATELLITE TIMELINE */}
+            {/* PHASE 3: DRONE PRECISION INSPECTION & DATA FUSION */}
+            <DroneInspectionPanel
+              farm={farm}
+              satelliteResult={result.analysis}
+            />
+
+            {/* PHASE 4: SATELLITE TIMELINE */}
             <div ref={satelliteRef}>
               <SatelliteTimeline currentAnalysis={result.analysis} farm={farm} />
             </div>

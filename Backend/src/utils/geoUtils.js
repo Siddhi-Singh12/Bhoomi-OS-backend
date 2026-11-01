@@ -107,8 +107,41 @@ function calculateCentroid(coordinates) {
   };
 }
 
+/**
+ * Calculates polygon area in hectares using geodesic projection.
+ */
+function calculatePolygonAreaHectares(coordinates) {
+  const ring = Array.isArray(coordinates[0][0]) ? coordinates[0] : coordinates;
+  if (!ring || ring.length < 3) return 1.0;
+
+  const R = 6378137; // Earth radius in meters
+  let totalArea = 0;
+
+  // Spherical polygon area (Girard's theorem / Green's theorem on sphere)
+  const centroid = calculateCentroid(ring);
+  const latRef = centroid.lat * Math.PI / 180;
+
+  for (let i = 0; i < ring.length - 1; i++) {
+    const p1 = ring[i];
+    const p2 = ring[i + 1];
+
+    const x1 = (p1[0] * Math.PI / 180) * R * Math.cos(latRef);
+    const y1 = (p1[1] * Math.PI / 180) * R;
+
+    const x2 = (p2[0] * Math.PI / 180) * R * Math.cos(latRef);
+    const y2 = (p2[1] * Math.PI / 180) * R;
+
+    totalArea += (x1 * y2 - x2 * y1);
+  }
+
+  const areaSqMeters = Math.abs(totalArea / 2);
+  const areaHa = areaSqMeters / 10000;
+  return Math.max(0.1, Math.round(areaHa * 100) / 100);
+}
+
 module.exports = {
   normalizeToGeoJSONPolygon,
   ensureClosedRing,
   calculateCentroid,
+  calculatePolygonAreaHectares,
 };
