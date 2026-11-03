@@ -33,7 +33,10 @@ def rank_and_schedule_fields(
         baseline_ndvi = 0.52 if crop == "Wheat" else 0.48
 
         # Calculate satellite screening score
-        from ai_engine.fusion_engine import compute_fused_risk
+        try:
+            from ai_engine.fusion_engine import compute_fused_risk
+        except ImportError:
+            from fusion_engine import compute_fused_risk
         fusion = compute_fused_risk(
             ndvi=ndvi,
             ndwi=ndwi,

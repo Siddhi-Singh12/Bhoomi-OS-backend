@@ -4,19 +4,38 @@ FastAPI entrypoint exposing precision agriculture analytics, flight planning,
 RGB computer vision, and multi-resolution satellite-drone data fusion.
 """
 
-from fastapi import FastAPI, HTTPException, UploadFile, File, Form
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from typing import List, Dict, Any, Optional
 import os
+import sys
 import shutil
+from pathlib import Path
 
-from ai_engine.flight_planner import generate_grid_mission, calculate_gsd
-from ai_engine.exif_parser import extract_exif_metadata, calculate_image_quality, validate_photo_in_field
-from ai_engine.cv_pipeline import analyze_rgb_drone_image
-from ai_engine.fusion_engine import compute_fused_risk
-from ai_engine.prioritization_engine import rank_and_schedule_fields
-from ai_engine.odm_client import OpenDroneMapClient
+# Add project root and ai_engine dir to sys.path so it works from anywhere
+current_dir = Path(__file__).resolve().parent
+parent_dir = current_dir.parent
+if str(parent_dir) not in sys.path:
+    sys.path.insert(0, str(parent_dir))
+if str(current_dir) not in sys.path:
+    sys.path.insert(0, str(current_dir))
+
+try:
+    from ai_engine.flight_planner import generate_grid_mission, calculate_gsd
+    from ai_engine.exif_parser import extract_exif_metadata, calculate_image_quality, validate_photo_in_field
+    from ai_engine.cv_pipeline import analyze_rgb_drone_image
+    from ai_engine.fusion_engine import compute_fused_risk
+    from ai_engine.prioritization_engine import rank_and_schedule_fields
+    from ai_engine.odm_client import OpenDroneMapClient
+except ImportError:
+    from flight_planner import generate_grid_mission, calculate_gsd
+    from exif_parser import extract_exif_metadata, calculate_image_quality, validate_photo_in_field
+    from cv_pipeline import analyze_rgb_drone_image
+    from fusion_engine import compute_fused_risk
+    from prioritization_engine import rank_and_schedule_fields
+    from odm_client import OpenDroneMapClient
+
 
 app = FastAPI(
     title="Bhoomi Intelligence AI/ML & Drone Analytics Engine",
@@ -92,28 +111,26 @@ def plan_drone_mission(req: MissionPlanRequest):
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+class ExifParseRequest(BaseModel):
+    image_path: str = Field(..., description="Local path to aerial drone image")
+    farm_id: Optional[int] = None
+
 @app.post("/api/v1/images/parse-exif")
-async def parse_image_exif(
-    file: UploadFile = File(...),
-    farm_id: Optional[int] = Form(None)
-):
+async def parse_image_exif(req: ExifParseRequest):
     """
     Module 7: Drone Image Acquisition & EXIF Parser
     Extracts GPS tags, flight altitude, and verifies photo location.
     """
-    upload_dir = "/tmp/bhoomi_drone_uploads"
-    os.makedirs(upload_dir, exist_ok=True)
-    temp_path = os.path.join(upload_dir, file.filename)
+    target_path = req.image_path
+    if not os.path.exists(target_path):
+        raise HTTPException(status_code=404, detail=f"Image file not found: {target_path}")
 
-    with open(temp_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
-
-    exif = extract_exif_metadata(temp_path)
-    qa = calculate_image_quality(temp_path)
+    exif = extract_exif_metadata(target_path)
+    qa = calculate_image_quality(target_path)
 
     return {
         "success": True,
-        "filename": file.filename,
+        "filename": os.path.basename(target_path),
         "metadata": exif,
         "quality_metrics": qa,
         "is_acceptable": qa["is_acceptable_for_orthomosaic"]
@@ -159,14 +176,18 @@ def prioritize_village_fields(req: PrioritizationRequest):
     )
     return {"success": True, "prioritization": result}
 
+class ODMProcessRequest(BaseModel):
+    farm_id: int = Field(1, description="Registered farm parcel ID")
+    image_paths: List[str] = Field(default_factory=list, description="List of local image file paths")
+
 @app.post("/api/v1/odm/process")
-def process_odm_orthomosaic(farm_id: int = Form(1)):
+def process_odm_orthomosaic(req: ODMProcessRequest):
     """
     Module 8: OpenDroneMap Orthomosaic Pipeline
     """
-    ortho = odm_client.process_orthomosaic(image_paths=[], farm_id=farm_id)
+    ortho = odm_client.process_orthomosaic(image_paths=req.image_paths, farm_id=req.farm_id)
     return {"success": True, "orthomosaic": ortho}
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("ai_engine.main:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

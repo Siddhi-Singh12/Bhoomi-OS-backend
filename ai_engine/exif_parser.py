@@ -163,7 +163,10 @@ def validate_photo_in_field(lat: float, lng: float, boundary_coords: List[List[f
     poly = [[float(p[0]), float(p[1])] for p in ring]
 
     # Point-in-polygon
-    from ai_engine.flight_planner import point_in_polygon
+    try:
+        from ai_engine.flight_planner import point_in_polygon
+    except ImportError:
+        from flight_planner import point_in_polygon
     is_inside = point_in_polygon(lng, lat, poly)
 
     return {
