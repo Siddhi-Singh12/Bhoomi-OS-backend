@@ -56,7 +56,14 @@ export default function AddFarm() {
     setError('');
 
     if (points.length < 3) {
-      setError('Please mark at least 3 points on the map to form a valid boundary.');
+      setError('Please mark at least 3 distinct corners on the map to form an enclosed field boundary.');
+      return;
+    }
+
+    // Verify points are not all identical
+    const uniquePoints = new Set(points.map(([lat, lng]) => `${lat.toFixed(5)},${lng.toFixed(5)}`));
+    if (uniquePoints.size < 3) {
+      setError('The marked points must not overlap or be identical. Please click at least 3 distinct corners of the field.');
       return;
     }
 
@@ -71,15 +78,21 @@ export default function AddFarm() {
         coordinates: [coordinates],
       };
 
+      const targetFarmerId = farmer.id || 1;
+
       const res = await apiClient.post('/farms', {
-        farmer_id: farmer.id,
+        farmer_id: targetFarmerId,
         crop_type: cropType || 'Mixed Crop',
         boundary,
       });
 
       navigate(`/farm/${res.data.farm.id}`);
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to register farm boundary in PostGIS');
+      if (!err.response) {
+        setError('Cannot connect to the backend server (Port 5001). Please make sure the backend is running (`npm start` in Backend folder).');
+      } else {
+        setError(err.response?.data?.error || 'Failed to register farm boundary in PostGIS. Please check that coordinates form a valid non-intersecting polygon.');
+      }
     } finally {
       setLoading(false);
     }
